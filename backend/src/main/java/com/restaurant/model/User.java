@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -16,7 +17,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Username is required")
+    @NotBlank(message = "Username required")
     @Size(max = 255, message = "Username cannot exceed 255 characters")
     private String username;
 
@@ -25,12 +26,20 @@ public class User {
     private String password;
 
     @NotBlank(message = "Role is required")
-    @Size(max = 50, message = "Role cannot exceed 50 characters")
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
+
+    private boolean active = true;
+
+    public enum UserRole {
+        KITCHEN_STAFF,
+        WAITER,
+        MANAGER
+    }
 
     public User() {}
 
-    public User(String username, String password, String role) {
+    public User(String username, String password, UserRole role) {
         this.username = username;
         this.password = password;
         this.role = role;
@@ -60,11 +69,19 @@ public class User {
         this.password = password;
     }
 
-    public String getRole() {
+    public UserRole getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }
