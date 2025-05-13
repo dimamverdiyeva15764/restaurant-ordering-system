@@ -8,30 +8,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Transactional
 public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderRepository orderRepository;
 
     @Override
+    @Transactional
     public Order createOrder(Order order) {
         order.setStatus(OrderStatus.PENDING);
+        order.setCreatedAt(LocalDateTime.now());
+        order.setOrderNumber("ORD-" + System.currentTimeMillis());
         return orderRepository.save(order);
     }
 
     @Override
+    @Transactional
     public Order updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Order not found"));
-        
+
         order.setStatus(status);
+        
         if (status == OrderStatus.READY) {
-            notifyWaiter(order);
+            order.setReadyAt(LocalDateTime.now());
         }
+        
         return orderRepository.save(order);
     }
 
@@ -52,9 +58,35 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void notifyWaiter(Order order) {
-        // TODO: Implement actual notification system (e.g., WebSocket, email, etc.)
-        // For now, we'll just log the notification
-        System.out.println("Notification: Order " + order.getOrderNumber() + " is ready for delivery!");
+    public List<Order> getPendingOrders() {
+        return orderRepository.findByStatus(OrderStatus.PENDING);
+    }
+
+    @Override
+    public List<Order> getReadyOrders() {
+        return orderRepository.findByStatus(OrderStatus.READY);
+    }
+
+    @Override
+    public List<Order> getActiveOrders() {
+        return orderRepository.findByStatusIn(
+            List.of(OrderStatus.PENDING, OrderStatus.IN_PREPARATION)
+        );
+    }
+
+    @Override
+    @Transactional
+    public Order markOrderAsDelivered(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (order.getStatus() != OrderStatus.READY) {
+            throw new RuntimeException("Order must be ready before marking as delivered");
+        }
+
+        order.setStatus(OrderStatus.DELIVERED);
+        order.setDeliveredAt(LocalDateTime.now());
+        
+        return orderRepository.save(order);
     }
 } 
