@@ -1,3 +1,3 @@
-INSERT INTO users (username, password, role) VALUES ('manager', 'password123', 'MANAGER');
-INSERT INTO users (username, password, role) VALUES ('waiter', 'password123', 'WAITER');
-INSERT INTO users (username, password, role) VALUES ('kitchen', 'password123', 'KITCHEN');
+INSERT INTO users (username, password, role, active) VALUES ('manager', 'password123', 'MANAGER', true);
+INSERT INTO users (username, password, role, active) VALUES ('waiter', 'password123', 'WAITER', true);
+INSERT INTO users (username, password, role, active) VALUES ('kitchen', 'password123', 'KITCHEN', true);
