@@ -1,6 +1,7 @@
 package com.restaurant.service;
 
 import com.restaurant.model.User;
+import com.restaurant.model.User.UserRole;
 import com.restaurant.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,16 +35,9 @@ public class LoginService {
     }
     
     @Transactional
-    public User registerUser(String username, String password, String role) {
-        //  Validation:
-        if (username == null || username.trim().isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be null or empty.");
-        }
-        if (password == null || password.trim().isEmpty() || password.length() < 8) {
-             throw new IllegalArgumentException("Password must be at least 8 characters long.");
-        }
-        if (role == null || role.trim().isEmpty()) {
-            throw new IllegalArgumentException("Role cannot be null or empty.");
+    public User registerUser(String username, String password, UserRole role) {
+        if (userRepository.findByUsername(username) != null) {
+            throw new RuntimeException("Username already exists");
         }
 
         String hashedPassword = passwordEncoder.encode(password);

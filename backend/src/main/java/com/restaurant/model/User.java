@@ -1,29 +1,29 @@
 package com.restaurant.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 
+@Data
 @Entity
 @Table(name = "users")
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "Username required")
     @Size(max = 255, message = "Username cannot exceed 255 characters")
+    @Column(unique = true)
     private String username;
 
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+
+    @NotBlank(message = "Full name is required")
+    private String fullName;
 
     @NotBlank(message = "Role is required")
     @Enumerated(EnumType.STRING)
