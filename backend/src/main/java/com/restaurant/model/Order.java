@@ -1,8 +1,10 @@
 package com.restaurant.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import java.time.LocalDateTime;
 
+@Data
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -22,10 +24,22 @@ public class Order {
     private User waiter;
 
     @Column(nullable = false)
+    private String tableNumber;
+
+    @Column(columnDefinition = "TEXT")
+    private String orderDetails;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column
     private LocalDateTime updatedAt;
+
+    @Column
+    private LocalDateTime readyAt;
+
+    @Column
+    private LocalDateTime deliveredAt;
 
     public enum OrderStatus {
         PENDING,
@@ -38,6 +52,7 @@ public class Order {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        status = OrderStatus.PENDING;
     }
 
     @PreUpdate
@@ -78,11 +93,43 @@ public class Order {
         this.waiter = waiter;
     }
 
+    public String getTableNumber() {
+        return tableNumber;
+    }
+
+    public void setTableNumber(String tableNumber) {
+        this.tableNumber = tableNumber;
+    }
+
+    public String getOrderDetails() {
+        return orderDetails;
+    }
+
+    public void setOrderDetails(String orderDetails) {
+        this.orderDetails = orderDetails;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public LocalDateTime getReadyAt() {
+        return readyAt;
+    }
+
+    public void setReadyAt(LocalDateTime readyAt) {
+        this.readyAt = readyAt;
+    }
+
+    public LocalDateTime getDeliveredAt() {
+        return deliveredAt;
+    }
+
+    public void setDeliveredAt(LocalDateTime deliveredAt) {
+        this.deliveredAt = deliveredAt;
     }
 } 

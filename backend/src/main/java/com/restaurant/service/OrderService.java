@@ -10,5 +10,8 @@ public interface OrderService {
     List<Order> getOrdersByStatus(OrderStatus status);
     List<Order> getOrdersByWaiter(Long waiterId);
     Order getOrderById(Long orderId);
-    void notifyWaiter(Order order);
+    List<Order> getPendingOrders();
+    List<Order> getReadyOrders();
+    List<Order> getActiveOrders();
+    Order markOrderAsDelivered(Long orderId);
 } 
