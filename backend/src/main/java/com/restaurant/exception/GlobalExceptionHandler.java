@@ -5,41 +5,57 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(InvalidWaiterException.class)
-    public ResponseEntity<?> handleInvalidWaiterException(InvalidWaiterException ex) {
-        ErrorResponse errorResponse = new ErrorResponse(
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.NOT_FOUND.value(),
             ex.getMessage(),
-            "INVALID_WAITER"
+            LocalDateTime.now()
         );
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(errorResponse);
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<?> handleRuntimeException(RuntimeException ex) {
-        ErrorResponse errorResponse = new ErrorResponse(
+    @ExceptionHandler(OrderProcessingException.class)
+    public ResponseEntity<ErrorResponse> handleOrderProcessingException(OrderProcessingException ex) {
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
             ex.getMessage(),
-            "BAD_REQUEST"
+            LocalDateTime.now()
         );
-        return ResponseEntity.badRequest().body(errorResponse);
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "An unexpected error occurred",
+            LocalDateTime.now()
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
 
 class ErrorResponse {
+    private int status;
     private String message;
-    private String error;
-    private long timestamp;
+    private LocalDateTime timestamp;
 
-    public ErrorResponse(String message, String error) {
+    public ErrorResponse(int status, String message, LocalDateTime timestamp) {
+        this.status = status;
         this.message = message;
-        this.error = error;
-        this.timestamp = System.currentTimeMillis();
+        this.timestamp = timestamp;
     }
 
     // Getters
+    public int getStatus() { return status; }
     public String getMessage() { return message; }
-    public String getError() { return error; }
-    public long getTimestamp() { return timestamp; }
+    public LocalDateTime getTimestamp() { return timestamp; }
 } 

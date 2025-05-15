@@ -1,8 +1,6 @@
 package com.restaurant.controller;
 
-import com.restaurant.dto.OrderDTO;
-import com.restaurant.dto.OrderMapper;
-import com.restaurant.model.OrderStatus;
+import com.restaurant.model.Order;
 import com.restaurant.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,22 +10,23 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
+
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderDTO> createOrder(@RequestBody OrderDTO orderDTO) {
-        return ResponseEntity.ok(OrderMapper.toDTO(orderService.createOrderFromDTO(orderDTO)));
+    public ResponseEntity<Order> createOrder(@RequestBody Order order) {
+        return ResponseEntity.ok(orderService.createOrder(order));
     }
 
-    @GetMapping("/{orderId}")
-    public ResponseEntity<OrderDTO> getOrderById(@PathVariable Long orderId) {
-        return ResponseEntity.ok(OrderMapper.toDTO(orderService.getOrderById(orderId)));
+    @GetMapping("/{orderNumber}")
+    public ResponseEntity<Order> getOrder(@PathVariable String orderNumber) {
+        return ResponseEntity.ok(orderService.getOrder(orderNumber));
     }
 
-    @PutMapping("/{orderId}/status")
-    public ResponseEntity<OrderDTO> updateOrderStatus(
-            @PathVariable Long orderId,
-            @RequestParam OrderStatus status) {
-        return ResponseEntity.ok(OrderMapper.toDTO(orderService.updateOrderStatus(orderId, status)));
+    @PutMapping("/{orderNumber}/status")
+    public ResponseEntity<Order> updateOrderStatus(
+            @PathVariable String orderNumber,
+            @RequestParam String status) {
+        return ResponseEntity.ok(orderService.updateOrderStatus(orderNumber, status));
     }
 } 

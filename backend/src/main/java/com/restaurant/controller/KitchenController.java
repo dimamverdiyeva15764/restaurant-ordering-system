@@ -26,11 +26,8 @@ public class KitchenController {
     }
 
     @GetMapping("/orders/pending")
-    public ResponseEntity<List<OrderDTO>> getPendingOrders() {
-        List<OrderDTO> pendingOrders = orderService.getPendingOrders().stream()
-            .map(OrderMapper::toDTO)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(pendingOrders);
+    public ResponseEntity<List<Order>> getPendingOrders() {
+        return ResponseEntity.ok(orderService.getPendingOrders());
     }
 
     @GetMapping("/orders/in-preparation")
@@ -55,5 +52,15 @@ public class KitchenController {
             @RequestParam OrderStatus status) {
         Order updatedOrder = orderService.updateOrderStatus(orderId, status);
         return ResponseEntity.ok(OrderMapper.toDTO(updatedOrder));
+    }
+
+    @PutMapping("/orders/{orderNumber}/prepare")
+    public ResponseEntity<Order> startPreparation(@PathVariable String orderNumber) {
+        return ResponseEntity.ok(orderService.startPreparation(orderNumber));
+    }
+
+    @PutMapping("/orders/{orderNumber}/ready")
+    public ResponseEntity<Order> markAsReady(@PathVariable String orderNumber) {
+        return ResponseEntity.ok(orderService.markAsReady(orderNumber));
     }
 } 
