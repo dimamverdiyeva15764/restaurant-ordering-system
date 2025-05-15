@@ -3,6 +3,7 @@ package com.restaurant.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Entity
@@ -13,46 +14,36 @@ public class Order {
     private Long id;
 
     @Column(nullable = false)
+    private String tableNumber;
+
+    @Column(unique = true)
     private String orderNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
 
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+    private LocalDateTime readyAt;
+    private LocalDateTime deliveredAt;
+
     @ManyToOne
     @JoinColumn(name = "waiter_id")
     private User waiter;
 
-    @Column(nullable = false)
-    private String tableNumber;
-
-    @Column(columnDefinition = "TEXT")
-    private String orderDetails;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column
-    private LocalDateTime updatedAt;
-
-    @Column
-    private LocalDateTime readyAt;
-
-    @Column
-    private LocalDateTime deliveredAt;
-
-    public enum OrderStatus {
-        PENDING,
-        IN_PREPARATION,
-        READY,
-        DELIVERED
-    }
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> items;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        status = OrderStatus.PENDING;
+        if (status == null) {
+            status = OrderStatus.PENDING;
+        }
     }
 
     @PreUpdate
@@ -69,12 +60,12 @@ public class Order {
         this.id = id;
     }
 
-    public String getOrderNumber() {
-        return orderNumber;
+    public String getTableNumber() {
+        return tableNumber;
     }
 
-    public void setOrderNumber(String orderNumber) {
-        this.orderNumber = orderNumber;
+    public void setTableNumber(String tableNumber) {
+        this.tableNumber = tableNumber;
     }
 
     public OrderStatus getStatus() {
@@ -93,22 +84,6 @@ public class Order {
         this.waiter = waiter;
     }
 
-    public String getTableNumber() {
-        return tableNumber;
-    }
-
-    public void setTableNumber(String tableNumber) {
-        this.tableNumber = tableNumber;
-    }
-
-    public String getOrderDetails() {
-        return orderDetails;
-    }
-
-    public void setOrderDetails(String orderDetails) {
-        this.orderDetails = orderDetails;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -117,19 +92,39 @@ public class Order {
         return updatedAt;
     }
 
-    public LocalDateTime getReadyAt() {
-        return readyAt;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public void setReadyAt(LocalDateTime readyAt) {
         this.readyAt = readyAt;
     }
 
+    public void setDeliveredAt(LocalDateTime deliveredAt) {
+        this.deliveredAt = deliveredAt;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public LocalDateTime getReadyAt() {
+        return readyAt;
+    }
+
     public LocalDateTime getDeliveredAt() {
         return deliveredAt;
     }
 
-    public void setDeliveredAt(LocalDateTime deliveredAt) {
-        this.deliveredAt = deliveredAt;
+    public List<OrderItem> getItems() {
+        return items;
     }
 } 
