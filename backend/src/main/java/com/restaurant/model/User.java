@@ -1,8 +1,6 @@
 package com.restaurant.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -13,22 +11,18 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Username required")
-    @Size(max = 255, message = "Username cannot exceed 255 characters")
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String username;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @Column(nullable = false)
     private String password;
 
-    @NotBlank(message = "Full name is required")
-    private String fullName;
-
-    @NotBlank(message = "Role is required")
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UserRole role;
 
+    private String fullName;
+    private String email;
     private boolean active = true;
 
     public enum UserRole {
