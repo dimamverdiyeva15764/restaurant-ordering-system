@@ -1,0 +1,99 @@
+### Variables
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Create a new order for Table 1
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+    "tableNumber": "8",
+    "status": "PENDING",
+    "items": [
+        {
+            "itemName": "Margherita Pizza",
+            "quantity": 2,
+            "price": 12.99,
+            "specialInstructions": "Extra cheese"
+        },
+        {
+            "itemName": "Caesar Salad",
+            "quantity": 1,
+            "price": 8.99,
+            "specialInstructions": "No croutons"
+        }
+    ],
+    "waiterId": 2  
+}
+
+### Create a new order for Table 3
+POST {{baseUrl}}/api/orders
+Content-Type: {{contentType}}
+
+{
+    "tableNumber": "3",
+    "status": "PENDING",
+    "items": [
+        {
+            "itemName": "Spaghetti Carbonara",
+            "quantity": 2,
+            "price": 14.99,
+            "specialInstructions": "Extra bacon"
+        },
+        {
+            "itemName": "Garlic Bread",
+            "quantity": 1,
+            "price": 5.99
+        }
+    ],
+    "waiterId": 3
+}
+
+### Create a new order for Table 5
+POST {{baseUrl}}/api/orders
+Content-Type: {{contentType}}
+
+{
+    "tableNumber": "5",
+    "status": "PENDING",
+    "items": [
+        {
+            "itemName": "Grilled Salmon",
+            "quantity": 1,
+            "price": 18.99,
+            "specialInstructions": "Medium well"
+        },
+        {
+            "itemName": "Mashed Potatoes",
+            "quantity": 1,
+            "price": 4.99
+        },
+        {
+            "itemName": "House Salad",
+            "quantity": 1,
+            "price": 7.99,
+            "specialInstructions": "Balsamic dressing on the side"
+        }
+    ],
+    "waiterId": 1
+}
+
+### Update first order to IN_PREPARATION
+PUT {{baseUrl}}/api/orders/1/status?status=IN_PREPARATION
+Content-Type: {{contentType}}
+
+### Update second order to READY
+PUT {{baseUrl}}/api/orders/2/status?status=READY
+Content-Type: {{contentType}}
+
+### Mark second order as DELIVERED
+PUT {{baseUrl}}/api/waiter/orders/2/deliver
+
+### Get all active orders
+GET {{baseUrl}}/api/waiter/orders/active
+
+### Get orders for specific waiter
+GET {{baseUrl}}/api/waiter/orders/1/ready
+
+### Get order statistics
+GET {{baseUrl}}/api/orders/stats
