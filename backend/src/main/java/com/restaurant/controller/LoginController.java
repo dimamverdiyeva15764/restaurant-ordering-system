@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.security.core.AuthenticationException; // Import this
+import org.springframework.security.core.AuthenticationException; 
 
 @Controller
 public class LoginController {
@@ -73,7 +73,7 @@ public class LoginController {
 
     @PostMapping("/register")
     public String handleRegistration(
-            @Valid @ModelAttribute("user") User user,  // Use @Valid and @ModelAttribute
+            @Valid @ModelAttribute("user") User user,
             BindingResult result,
             RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
