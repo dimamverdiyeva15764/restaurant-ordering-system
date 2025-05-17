@@ -9,6 +9,7 @@ import CustomerNavbar from './components/CustomerNavbar';
 import TableScanner from './components/TableScanner';
 import Menu from './components/Menu';
 import Cart from './components/Cart';
+import OrderStatus from './components/OrderStatus';
 
 const theme = createTheme({
   palette: {
@@ -30,12 +31,13 @@ function App() {
           <Route path="/" element={<TableScanner />} />
           <Route path="/menu" element={<Menu />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/order/:orderId" element={<OrderStatus />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <ToastContainer position="bottom-right" />
       </CartProvider>
     </ThemeProvider>
-  );
+    );
 }
 
-export default App; 
+export default App;

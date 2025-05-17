@@ -1,23 +1,45 @@
--- Appetizers
-INSERT INTO menu_item (name, description, price, category, image_url, available) VALUES
-('Spring Rolls', 'Fresh vegetables wrapped in rice paper', 5.99, 'Appetizers', 'https://cdn.pixabay.com/photo/2017/02/25/16/31/spring-rolls-2098046_1280.jpg', true),
-('Chicken Wings', 'Crispy wings with choice of sauce', 8.99, 'Appetizers', 'https://cdn.pixabay.com/photo/2017/09/03/01/17/wings-2709068_1280.jpg', true),
-('Garlic Bread', 'Toasted bread with garlic butter', 4.99, 'Appetizers', 'https://cdn.pixabay.com/photo/2017/03/23/19/57/asparagus-2169305_1280.jpg', true);
+-- Categories
+INSERT INTO categories (id, name, description) VALUES 
+(1, 'Appetizers', 'Start your meal with something delicious'),
+(2, 'Main Courses', 'Hearty entrees to satisfy your hunger'),
+(3, 'Desserts', 'Sweet treats to end your meal'),
+(4, 'Beverages', 'Drinks to quench your thirst');
 
--- Main Courses
-INSERT INTO menu_item (name, description, price, category, image_url, available) VALUES
-('Grilled Salmon', 'Fresh salmon with lemon butter sauce', 24.99, 'Main Courses', 'https://cdn.pixabay.com/photo/2016/06/28/17/32/salmon-1485014_1280.jpg', true),
-('Beef Steak', 'Premium cut beef steak with mushroom sauce', 29.99, 'Main Courses', 'https://cdn.pixabay.com/photo/2018/09/14/11/12/food-3676796_1280.jpg', true),
-('Chicken Alfredo', 'Creamy pasta with grilled chicken', 18.99, 'Main Courses', 'https://cdn.pixabay.com/photo/2020/03/17/17/41/pasta-4941417_1280.jpg', true);
+-- Menu Items (Appetizers)
+INSERT INTO menu_item (id, name, description, price, category, image_url, available) VALUES
+(101, 'Garlic Bread', 'Toasted bread with garlic butter and herbs', 4.99, 'Appetizers', 'https://www.allrecipes.com/thmb/GrV_mWqrxIh9ysH8PELYfGXeSFg=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/4526061-24b9144c4f734b5c9433248c952ba5e6.jpg', true),
+(102, 'Mozzarella Sticks', 'Breaded mozzarella with marinara sauce', 6.99, 'Appetizers', 'https://www.allrecipes.com/thmb/BeVxirh6GosXjLy6o-YrfHSuteM=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/23596-fried-mozzarella-cheese-sticks-DDMFS-4x3-842a0e27e0b34acda76d0fb57006027e.jpg', true),
+(103, 'Chicken Wings', 'Crispy wings with your choice of sauce', 8.99, 'Appetizers', 'https://www.allrecipes.com/thmb/K5YqcpUzOdXQReUJOntOGiZWxJc=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/233170-weekend-wings-DDMFS-4x3-01d91abe42534a7c9954f5ceb1e0f997.jpg', true);
 
--- Desserts
-INSERT INTO menu_item (name, description, price, category, image_url, available) VALUES
-('Chocolate Cake', 'Rich chocolate layer cake', 6.99, 'Desserts', 'https://cdn.pixabay.com/photo/2016/11/22/18/52/cake-1850011_1280.jpg', true),
-('Ice Cream', 'Vanilla ice cream with toppings', 4.99, 'Desserts', 'https://cdn.pixabay.com/photo/2016/03/23/15/00/ice-cream-1274894_1280.jpg', true),
-('Fruit Tart', 'Fresh seasonal fruits on custard', 7.99, 'Desserts', 'https://cdn.pixabay.com/photo/2016/03/27/22/38/cake-1284548_1280.jpg', true);
+-- Menu Items (Main Courses)
+INSERT INTO menu_item (id, name, description, price, category, image_url, available) VALUES
+(201, 'Margherita Pizza', 'Classic pizza with tomato sauce, mozzarella, and basil', 12.99, 'Main Courses', 'https://www.allrecipes.com/thmb/tMhYAjIOyyHYgLJRkMYOPXN5cfs=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Pizza-Margherita-2000-ff105840fdbe4d818177bfcb3e840053.jpg', true),
+(202, 'Cheeseburger', 'Beef patty with cheese, lettuce, tomato, and special sauce', 10.99, 'Main Courses', 'https://www.allrecipes.com/thmb/ltJFUPcaMfk-HS7Xgqz7ux-mQC4=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/49409-Juiciest-Hamburgers-Ever-2000-f96594f1c2384e629db92ce6e357e2eb.jpg', true),
+(203, 'Grilled Salmon', 'Fresh salmon fillet with lemon butter sauce', 16.99, 'Main Courses', 'https://www.allrecipes.com/thmb/TbFNHbcvQ1Nyako8QtbxDnOAV-Q=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/7374758-baked-salmon-with-lemon-and-dill-BIGDADDY-4x3-2fa4ef7df4d04c4b893892231f729723.jpg', true);
 
--- Beverages
-INSERT INTO menu_item (name, description, price, category, image_url, available) VALUES
-('Fresh Lemonade', 'Homemade lemonade with mint', 3.99, 'Beverages', 'https://cdn.pixabay.com/photo/2016/07/21/11/17/drink-1532300_1280.jpg', true),
-('Iced Tea', 'Fresh brewed iced tea', 2.99, 'Beverages', 'https://cdn.pixabay.com/photo/2016/10/09/17/06/ice-tea-1726270_1280.jpg', true),
-('Coffee', 'Premium roasted coffee', 3.49, 'Beverages', 'https://cdn.pixabay.com/photo/2015/10/12/14/54/coffee-983955_1280.jpg', true); 
+-- Menu Items (Desserts)
+INSERT INTO menu_item (id, name, description, price, category, image_url, available) VALUES
+(301, 'Chocolate Cake', 'Rich chocolate cake with ganache', 5.99, 'Desserts', 'https://www.allrecipes.com/thmb/beqM4NrWGNGbzM3U1D4OMi-m2D8=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/8379761-triple-layer-chocolate-cake-with-chocolate-frostin-DDMFS-4x3-2000-d4344a929db44c69886dd50ec3ecb552.jpg', true),
+(302, 'Cheesecake', 'New York style cheesecake with berry compote', 6.99, 'Desserts', 'https://www.allrecipes.com/thmb/zafIXqzbyQFIrJ84L6MnCuHB9Z8=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/8274_perfect-cheesecake-ddmfs-4x3-1196-a7b75fe2db674206833d4ca817080b0c.jpg', true),
+(303, 'Ice Cream', 'Three scoops of your choice of flavors', 4.99, 'Desserts', 'https://www.allrecipes.com/thmb/1bAsGASKyAEcUvbGQi6BvX_VCnk=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/vanilla-ice-cream-3145-e697eca2e93842bab39fb5ac1fab8d7f.jpg', true);
+
+-- Menu Items (Beverages)
+INSERT INTO menu_item (id, name, description, price, category, image_url, available) VALUES
+(401, 'Soft Drink', 'Your choice of cola, lemon-lime, or root beer', 2.49, 'Beverages', 'https://images.immediate.co.uk/production/volatile/sites/30/2021/05/soft-drinks-74b7698.jpg?quality=90&resize=440,400', true),
+(402, 'Iced Tea', 'Freshly brewed and chilled', 2.49, 'Beverages', 'https://www.allrecipes.com/thmb/u_UOQYhTyBU-NwzHOVJ05pG1Kfw=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/218364-southern-sweet-tea-DDMFS-4x3-0178-19ea0b42c56b4abfa02d204e2d98b861.jpg', true),
+(403, 'Coffee', 'Regular or decaf', 2.29, 'Beverages', 'https://www.allrecipes.com/thmb/Oag1_0cRg-_wmmHH0JygYFrwTLI=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-1225598339-2000-1c95377ac156498eb1e74a503a9dbbb2.jpg', true);
+
+-- Tables
+INSERT INTO restaurant_table (id, number, capacity, status) VALUES
+(1, 1, 2, 'AVAILABLE'),
+(2, 2, 4, 'AVAILABLE'),
+(3, 3, 6, 'AVAILABLE'),
+(4, 4, 8, 'AVAILABLE');
+
+-- Initial Order Status Types
+INSERT INTO order_status (id, name, description) VALUES
+(1, 'PENDING', 'Order has been received but not yet processed'),
+(2, 'PREPARING', 'Kitchen is preparing the order'),
+(3, 'READY', 'Order is ready for pickup/delivery'),
+(4, 'DELIVERED', 'Order has been delivered to the customer'),
+(5, 'CANCELLED', 'Order has been cancelled'); 

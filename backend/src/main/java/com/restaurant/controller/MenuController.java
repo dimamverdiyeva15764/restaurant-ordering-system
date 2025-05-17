@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/menu")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = "*", allowCredentials = "true")
 public class MenuController {
     private final MenuService menuService;
 
@@ -21,7 +21,8 @@ public class MenuController {
 
     @GetMapping
     public ResponseEntity<List<MenuItem>> getAllMenuItems() {
-        return ResponseEntity.ok(menuService.getAllMenuItems());
+        List<MenuItem> items = menuService.getAllMenuItems();
+        return ResponseEntity.ok().body(items);
     }
 
     @GetMapping("/{id}")

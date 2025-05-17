@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -8,15 +9,21 @@ import {
   IconButton,
   Button,
   Divider,
+  TextField,
+  CircularProgress
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCart } from '../context/CartContext';
+import { createOrder } from '../services/orderService';
 import { toast } from 'react-toastify';
 
 const Cart = () => {
-  const { cartItems, addToCart, removeFromCart, clearCart, updateQuantity } = useCart();
+  const { cartItems, removeFromCart, clearCart, updateQuantity } = useCart();
+  const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -31,10 +38,32 @@ const Cart = () => {
     }
   };
 
-  const handlePlaceOrder = () => {
-    // TODO: Implement order placement logic
-    toast.success('Order placed successfully!');
-    clearCart();
+  const handlePlaceOrder = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Get table ID from localStorage or use a default
+      const tableId = localStorage.getItem('tableId') || '1';
+      
+      const orderData = {
+        tableId,
+        items: cartItems,
+        notes: notes.trim()
+      };
+      
+      const response = await createOrder(orderData);
+      
+      toast.success('Order placed successfully!');
+      clearCart();
+      
+      // Navigate to order status page
+      navigate(`/order/${response.id}`);
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast.error('Failed to place order. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (cartItems.length === 0) {
@@ -88,6 +117,20 @@ const Cart = () => {
           </React.Fragment>
         ))}
       </List>
+      
+      <Box sx={{ mt: 3 }}>
+        <TextField
+          fullWidth
+          multiline
+          rows={2}
+          label="Special Instructions (optional)"
+          variant="outlined"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          margin="normal"
+        />
+      </Box>
+      
       <Box sx={{ mt: 3 }}>
         <Typography variant="h6" gutterBottom>
           Total: ${calculateTotal().toFixed(2)}
@@ -97,8 +140,10 @@ const Cart = () => {
           color="primary"
           fullWidth
           onClick={handlePlaceOrder}
+          disabled={isSubmitting}
+          sx={{ mt: 2 }}
         >
-          Place Order
+          {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Place Order'}
         </Button>
       </Box>
     </Box>
