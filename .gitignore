@@ -1,10 +1,41 @@
+# Gradle files
+.gradle/
+build/
+
+# Node dependencies
+node_modules/
+
+# Large files
+*.zip
+backend/gradle.zip
+backend/spring-cli.zip
+backend/lib/
+backend/spring-cli/
+
+# Logs
+*.log
+
 # IDE files
 .idea/
 .vscode/
 *.iml
 
+# Compiled class files
+*.class
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# Database
+*.db
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
 # Dependencies
-node_modules/
 target/
 .mvn/
 
@@ -19,12 +50,7 @@ target/
 .env.test.local
 .env.production.local
 
-# Logs
+# System Files
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
-*.log
-
-# System Files
-.DS_Store
-Thumbs.db 
+yarn-error.log* 
