@@ -13,12 +13,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.restaurant.exception.InvalidWaiterException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
 
     @Autowired
     private OrderRepository orderRepository;
@@ -51,9 +55,15 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Order updateOrderStatus(Long orderId, OrderStatus status) {
+        log.info("Updating order {} to status {}", orderId, status);
+        
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Order not found"));
+        
+        log.info("Found order: ID={}, CurrentStatus={}", order.getId(), order.getStatus());
 
+        OrderStatus previousStatus = order.getStatus();
+        order.setPreviousStatus(previousStatus);
         order.setStatus(status);
         order.setUpdatedAt(LocalDateTime.now());
         
@@ -64,6 +74,18 @@ public class OrderServiceImpl implements OrderService {
         }
         
         Order updatedOrder = orderRepository.save(order);
+        
+        // Verify the update
+        Order verifiedOrder = orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("Order not found after update"));
+        
+        if (verifiedOrder.getStatus() != status) {
+            log.error("Status update failed - Expected: {}, Actual: {}", status, verifiedOrder.getStatus());
+            throw new RuntimeException("Status update failed");
+        }
+        
+        // Log the status change
+        log.info("Order {} status changed from {} to {}", orderId, previousStatus, status);
         
         // Notify all relevant parties about status change
         notificationService.broadcastKitchenUpdate(updatedOrder);

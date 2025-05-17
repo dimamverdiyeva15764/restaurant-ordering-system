@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Restaurant WebSocket Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        .container { margin: 20px; }
+        .message-box { 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            margin: 10px 0; 
+            height: 200px; 
+            overflow-y: auto; 
+        }
+        .button-group { margin: 10px 0; }
+        button { 
+            margin-right: 10px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            background-color: #4299e1;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #3182ce;
+        }
+        .order-form {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .items-container {
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background-color: white;
+        }
+        .item-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: flex-end;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #4a5568;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        .preset-orders {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background-color: white;
+        }
+        .remove-item {
+            background-color: #f56565;
+        }
+        .remove-item:hover {
+            background-color: #e53e3e;
+        }
+        .add-item {
+            background-color: #48bb78;
+        }
+        .add-item:hover {
+            background-color: #38a169;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>WebSocket Connection Status: <span id="connection-status">Disconnected</span></h2>
+        
+        <div class="button-group">
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div class="preset-orders">
+            <h3>Preset Orders</h3>
+            <div class="button-group">
+                <button onclick="createPresetOrder('pizza')">Create Pizza Order</button>
+                <button onclick="createPresetOrder('complex')">Create Complex Order</button>
+                <button onclick="createPresetOrder('dessert')">Create Dessert Order</button>
+            </div>
+        </div>
+
+        <div class="order-form">
+            <h3>Create Custom Order</h3>
+            <div class="form-group">
+                <label for="tableNumber">Table Number:</label>
+                <input type="text" id="tableNumber" value="1">
+            </div>
+
+            <div id="items-list" class="items-container">
+                <h4>Order Items</h4>
+            </div>
+
+            <button class="add-item" onclick="addItemRow()">Add Item</button>
+            <button onclick="createCustomOrder()">Create Order</button>
+        </div>
+
+        <div class="active-orders">
+            <h3>Active Orders</h3>
+            <div id="active-orders-list" class="items-container">
+                <!-- Active orders will be displayed here -->
+            </div>
+        </div>
+
+        <h3>Subscribe to Topics</h3>
+        <div class="button-group">
+            <button onclick="subscribeToKitchenStatus()">Subscribe to Kitchen Status</button>
+            <button onclick="subscribeToActiveOrders()">Subscribe to Active Orders</button>
+            <button onclick="subscribeToReadyOrders()">Subscribe to Ready Orders</button>
+            <button onclick="subscribeToRecentOrders()">Subscribe to Recent Orders</button>
+            <button onclick="subscribeToOrderStats()">Subscribe to Order Stats</button>
+        </div>
+
+        <h3>Messages Received:</h3>
+        <div id="messages" class="message-box"></div>
+    </div>
+
+    <script>
+        let stompClient = null;
+        let messageCount = 0;
+        let socket = null;
+        let subscriptions = {};
+        let itemCounter = 0;
+        let processedOrderIds = new Set(); // Track processed order IDs
+        let activeOrders = new Map(); // Track active orders and their status
+
+        const ORDER_STATUS_SEQUENCE = ['IN_PREPARATION', 'READY', 'DELIVERED'];
+
+        const PRESET_ORDERS = {
+            pizza: {
+                tableNumber: "1",
+                items: [{
+                    itemName: "Margherita Pizza",
+                    quantity: 1,
+                    price: 12.99,
+                    specialInstructions: "Extra cheese"
+                }]
+            },
+            complex: {
+                tableNumber: "5",
+                items: [
+                    {
+                        itemName: "Pepperoni Pizza",
+                        quantity: 2,
+                        price: 14.99,
+                        specialInstructions: "Well done"
+                    },
+                    {
+                        itemName: "Caesar Salad",
+                        quantity: 1,
+                        price: 8.99,
+                        specialInstructions: "Dressing on the side"
+                    },
+                    {
+                        itemName: "Coca Cola",
+                        quantity: 3,
+                        price: 2.50,
+                        specialInstructions: "With ice"
+                    }
+                ]
+            },
+            dessert: {
+                tableNumber: "3",
+                items: [
+                    {
+                        itemName: "Tiramisu",
+                        quantity: 2,
+                        price: 7.99,
+                        specialInstructions: "Extra cocoa powder"
+                    },
+                    {
+                        itemName: "Espresso",
+                        quantity: 2,
+                        price: 3.50,
+                        specialInstructions: "Double shot"
+                    }
+                ]
+            }
+        };
+
+        function connect() {
+            try {
+                addMessage('Initializing WebSocket connection...');
+                const hostname = window.location.hostname || 'localhost';
+                const wsUrl = `${window.location.protocol === 'https:' ? 'https:' : 'http:'}//${hostname}:8080/ws`;
+                addMessage(`Attempting to connect to: ${wsUrl}`);
+                
+                socket = new SockJS(wsUrl);
+                
+                socket.onopen = () => {
+                    addMessage('SockJS connection opened');
+                };
+                
+                socket.onclose = (event) => {
+                    addMessage(`SockJS connection closed. Code: ${event.code}, Reason: ${event.reason}`);
+                    // Clear processed orders on disconnect
+                    processedOrderIds.clear();
+                };
+                
+                socket.onerror = (error) => {
+                    addMessage('SockJS error: ' + JSON.stringify(error));
+                };
+
+                stompClient = Stomp.over(socket);
+                stompClient.debug = function(str) {
+                    addMessage('STOMP: ' + str);
+                };
+                
+                const headers = {
+                    'heart-beat': '10000,10000',
+                    'accept-version': '1.1,1.2'
+                };
+                
+                const connectCallback = function(frame) {
+                    document.getElementById('connection-status').textContent = 'Connected';
+                    addMessage('STOMP Connected: ' + frame);
+                    subscribeToKitchenStatus();
+                };
+                
+                const errorCallback = function(error) {
+                    document.getElementById('connection-status').textContent = 'Error';
+                    addMessage('STOMP Error: ' + error);
+                    if (stompClient !== null) {
+                        try {
+                            stompClient.disconnect();
+                        } catch (e) {
+                            addMessage('Disconnect error during reconnect: ' + e.toString());
+                        }
+                    }
+                    setTimeout(connect, 5000);
+                };
+                
+                stompClient.connect(headers, connectCallback, errorCallback);
+            } catch (e) {
+                addMessage('Connection error: ' + e.toString());
+            }
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                try {
+                    stompClient.disconnect();
+                    document.getElementById('connection-status').textContent = 'Disconnected';
+                    addMessage('Disconnected from WebSocket');
+                } catch (e) {
+                    addMessage('Disconnect error: ' + e.toString());
+                }
+            }
+            if (socket !== null) {
+                try {
+                    socket.close();
+                } catch (e) {
+                    addMessage('Socket close error: ' + e.toString());
+                }
+            }
+        }
+
+        function addItemRow() {
+            const itemsList = document.getElementById('items-list');
+            const itemRow = document.createElement('div');
+            itemRow.className = 'item-row';
+            itemRow.id = `item-${itemCounter}`;
+            
+            itemRow.innerHTML = `
+                <div style="flex: 2;">
+                    <label>Item Name:</label>
+                    <input type="text" class="item-name" value="Margherita Pizza">
+                </div>
+                <div style="flex: 1;">
+                    <label>Quantity:</label>
+                    <input type="number" class="item-quantity" value="1" min="1">
+                </div>
+                <div style="flex: 1;">
+                    <label>Price:</label>
+                    <input type="number" class="item-price" value="12.99" step="0.01" min="0">
+                </div>
+                <div style="flex: 2;">
+                    <label>Special Instructions:</label>
+                    <input type="text" class="item-instructions" value="">
+                </div>
+                <button class="remove-item" onclick="removeItem(${itemCounter})">Remove</button>
+            `;
+            
+            itemsList.appendChild(itemRow);
+            itemCounter++;
+        }
+
+        function removeItem(id) {
+            const item = document.getElementById(`item-${id}`);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        function createPresetOrder(type) {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+
+            const orderData = PRESET_ORDERS[type];
+            if (!orderData) {
+                addMessage('Invalid preset order type');
+                return;
+            }
+
+            addMessage('Creating preset order: ' + JSON.stringify(orderData, null, 2));
+            stompClient.send('/app/orders/create', {}, JSON.stringify(orderData));
+        }
+
+        function createCustomOrder() {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+
+            const items = [];
+            const itemRows = document.querySelectorAll('.item-row');
+            
+            if (itemRows.length === 0) {
+                addMessage('Error: Add at least one item to the order');
+                return;
+            }
+
+            itemRows.forEach(row => {
+                const quantity = parseInt(row.querySelector('.item-quantity').value);
+                const price = parseFloat(row.querySelector('.item-price').value);
+                
+                if (isNaN(quantity) || quantity < 1) {
+                    addMessage('Error: Invalid quantity');
+                    return;
+                }
+                if (isNaN(price) || price < 0) {
+                    addMessage('Error: Invalid price');
+                    return;
+                }
+
+                items.push({
+                    itemName: row.querySelector('.item-name').value.trim(),
+                    quantity: quantity,
+                    price: price,
+                    specialInstructions: row.querySelector('.item-instructions').value.trim()
+                });
+            });
+
+            const tableNumber = document.getElementById('tableNumber').value.trim();
+            if (!tableNumber) {
+                addMessage('Error: Table number is required');
+                return;
+            }
+
+            const orderData = {
+                tableNumber: tableNumber,
+                items: items
+            };
+
+            addMessage('Creating custom order: ' + JSON.stringify(orderData, null, 2));
+            stompClient.send('/app/orders/create', {}, JSON.stringify(orderData));
+        }
+
+        function updateActiveOrdersList() {
+            const container = document.getElementById('active-orders-list');
+            container.innerHTML = '';
+            
+            activeOrders.forEach((orderData, orderId) => {
+                const orderDiv = document.createElement('div');
+                orderDiv.className = 'order-item';
+                orderDiv.style.padding = '10px';
+                orderDiv.style.margin = '10px 0';
+                orderDiv.style.border = '1px solid #ccc';
+                orderDiv.style.borderRadius = '4px';
+                
+                const statusButtons = ORDER_STATUS_SEQUENCE.map(status => {
+                    const isCurrentStatus = orderData.status === status;
+                    const isPastStatus = ORDER_STATUS_SEQUENCE.indexOf(status) < ORDER_STATUS_SEQUENCE.indexOf(orderData.status);
+                    const isNextStatus = ORDER_STATUS_SEQUENCE.indexOf(status) === ORDER_STATUS_SEQUENCE.indexOf(orderData.status) + 1;
+                    
+                    return `<button 
+                        onclick="updateOrderStatus(${orderId}, '${status}')"
+                        ${(isCurrentStatus || isPastStatus) ? 'disabled' : ''}
+                        style="margin-right: 5px; ${isCurrentStatus ? 'background-color: #48bb78;' : ''} ${!isNextStatus ? 'opacity: 0.5;' : ''}"
+                        ${!isNextStatus ? 'disabled' : ''}
+                    >${status}</button>`;
+                }).join('');
+                
+                orderDiv.innerHTML = `
+                    <div><strong>Order #${orderId}</strong> - Table ${orderData.tableNumber}</div>
+                    <div>Status: ${orderData.status}</div>
+                    <div>Items: ${orderData.items.map(item => `${item.quantity}x ${item.itemName}`).join(', ')}</div>
+                    <div style="margin-top: 10px">
+                        ${statusButtons}
+                    </div>
+                `;
+                
+                container.appendChild(orderDiv);
+            });
+        }
+
+        function handleOrderMessage(message, source) {
+            try {
+                const order = JSON.parse(message.body);
+                if (!order.id) {
+                    addMessage(`Warning: Received order without ID from ${source}`);
+                    return;
+                }
+
+                // For new orders or status updates
+                if (source === 'new-orders' || source === 'kitchen-status') {
+                    if (source === 'new-orders') {
+                        order.status = 'PENDING'; // Set initial status
+                    }
+                    
+                    activeOrders.set(order.id, order);
+                    updateActiveOrdersList();
+                }
+
+                addMessage(`Received order update from ${source}: Order #${order.id} - Status: ${order.status}`);
+                return order;
+            } catch (e) {
+                addMessage(`Error processing order message from ${source}: ${e.toString()}`);
+                return null;
+            }
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+
+            const order = activeOrders.get(orderId);
+            if (!order) {
+                addMessage(`Error: Order ${orderId} not found`);
+                return;
+            }
+
+            const currentStatusIndex = ORDER_STATUS_SEQUENCE.indexOf(order.status);
+            const newStatusIndex = ORDER_STATUS_SEQUENCE.indexOf(newStatus);
+            
+            if (newStatusIndex !== currentStatusIndex + 1) {
+                addMessage(`Error: Cannot update status from ${order.status} to ${newStatus}`);
+                return;
+            }
+
+            sendOrderStatusUpdate(orderId, newStatus);
+        }
+
+        function subscribeToKitchenStatus() {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+            
+            try {
+                // Subscribe to kitchen status updates
+                if (!subscriptions['kitchen-status']) {
+                    subscriptions['kitchen-status'] = stompClient.subscribe('/topic/kitchen/status', function(message) {
+                        handleOrderMessage(message, 'kitchen-status');
+                    });
+                    addMessage('Subscribed to kitchen status updates');
+                }
+
+                // Subscribe to new orders
+                if (!subscriptions['new-orders']) {
+                    subscriptions['new-orders'] = stompClient.subscribe('/topic/orders/new', function(message) {
+                        handleOrderMessage(message, 'new-orders');
+                    });
+                    addMessage('Subscribed to new orders');
+                }
+            } catch (e) {
+                addMessage('Subscribe error: ' + e.toString());
+            }
+        }
+
+        function subscribeToActiveOrders() {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+            
+            try {
+                if (!subscriptions['active-orders']) {
+                    subscriptions['active-orders'] = stompClient.subscribe('/app/kitchen/active-orders', function(message) {
+                        addMessage('Active Orders: ' + message.body);
+                    });
+                    addMessage('Subscribed to active orders');
+                }
+            } catch (e) {
+                addMessage('Subscribe error: ' + e.toString());
+            }
+        }
+
+        function subscribeToReadyOrders() {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+            
+            try {
+                if (!subscriptions['ready-orders']) {
+                    subscriptions['ready-orders'] = stompClient.subscribe('/app/kitchen/ready-orders', function(message) {
+                        addMessage('Ready Orders: ' + message.body);
+                    });
+                    addMessage('Subscribed to ready orders');
+                }
+            } catch (e) {
+                addMessage('Subscribe error: ' + e.toString());
+            }
+        }
+
+        function subscribeToRecentOrders() {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+            
+            try {
+                if (!subscriptions['recent-orders']) {
+                    subscriptions['recent-orders'] = stompClient.subscribe('/app/orders/recent', function(message) {
+                        addMessage('Recent Orders: ' + message.body);
+                    });
+                    addMessage('Subscribed to recent orders');
+                }
+            } catch (e) {
+                addMessage('Subscribe error: ' + e.toString());
+            }
+        }
+
+        function subscribeToOrderStats() {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+            
+            try {
+                if (!subscriptions['order-stats']) {
+                    subscriptions['order-stats'] = stompClient.subscribe('/app/orders/stats', function(message) {
+                        addMessage('Order Statistics: ' + message.body);
+                    });
+                    addMessage('Subscribed to order statistics');
+                }
+            } catch (e) {
+                addMessage('Subscribe error: ' + e.toString());
+            }
+        }
+
+        function sendOrderStatusUpdate(orderId, status) {
+            if (!stompClient || !stompClient.connected) {
+                addMessage('Not connected to WebSocket');
+                return;
+            }
+
+            const payload = {
+                orderId: orderId,
+                status: status
+            };
+            
+            addMessage(`Sending status update - Order ID: ${orderId}, New Status: ${status}`);
+            stompClient.send('/app/kitchen/update-status', {}, JSON.stringify(payload));
+        }
+
+        function addMessage(message) {
+            messageCount++;
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.textContent = `${messageCount}. ${message}`;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // Add an initial item row when the page loads
+        window.onload = function() {
+            addItemRow();
+        };
+    </script>
+</body>
+</html> 

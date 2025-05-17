@@ -2,25 +2,145 @@
 @baseUrl = http://localhost:8080
 @contentType = application/json
 
-### Create a new order for Table 1
+### Create Order 1 - Simple order
 POST http://localhost:8080/api/orders
 Content-Type: application/json
+
+{
+    "tableNumber": "1",
+    "items": [
+        {
+            "itemName": "Margherita Pizza",
+            "quantity": 1,
+            "price": 12.99,
+            "specialInstructions": "Extra cheese"
+        },
+        {
+            "itemName": "Coca Cola",
+            "quantity": 2,
+            "price": 2.50,
+            "specialInstructions": "With ice"
+        }
+    ]
+}
+
+### Create Order 2 - Large group order
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+    "tableNumber": "5",
+    "items": [
+        {
+            "itemName": "Pepperoni Pizza",
+            "quantity": 2,
+            "price": 14.99,
+            "specialInstructions": "Well done"
+        },
+        {
+            "itemName": "Caesar Salad",
+            "quantity": 3,
+            "price": 8.99,
+            "specialInstructions": "Dressing on the side"
+        },
+        {
+            "itemName": "Garlic Bread",
+            "quantity": 2,
+            "price": 4.99,
+            "specialInstructions": "Extra garlic"
+        },
+        {
+            "itemName": "Sprite",
+            "quantity": 4,
+            "price": 2.50,
+            "specialInstructions": "No ice"
+        }
+    ]
+}
+
+### Create Order 3 - Special requests
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+    "tableNumber": "3",
+    "items": [
+        {
+            "itemName": "Vegetarian Pizza",
+            "quantity": 1,
+            "price": 13.99,
+            "specialInstructions": "Gluten-free crust, no onions"
+        },
+        {
+            "itemName": "Greek Salad",
+            "quantity": 1,
+            "price": 9.99,
+            "specialInstructions": "No olives"
+        },
+        {
+            "itemName": "Mineral Water",
+            "quantity": 1,
+            "price": 1.99,
+            "specialInstructions": "Room temperature"
+        }
+    ]
+}
+
+### Create Order 4 - Dessert order
+POST http://localhost:8080/api/orders
+Content-Type: application/json
+
+{
+    "tableNumber": "2",
+    "items": [
+        {
+            "itemName": "Tiramisu",
+            "quantity": 2,
+            "price": 6.99,
+            "specialInstructions": "Extra cocoa powder"
+        },
+        {
+            "itemName": "Espresso",
+            "quantity": 2,
+            "price": 2.99,
+            "specialInstructions": "Double shot"
+        }
+    ]
+}
+
+### Get Recent Orders
+GET http://localhost:8080/api/manager/orders/recent
+
+### Get Order Statistics
+GET http://localhost:8080/api/manager/stats
+
+### Update Order Status (replace {orderId} with actual order ID)
+PUT http://localhost:8080/api/kitchen/orders/{orderId}/status?status=IN_PREPARATION
+
+### Get Active Orders
+GET http://localhost:8080/api/kitchen/orders/active
+
+### Get Ready Orders
+GET http://localhost:8080/api/kitchen/orders/ready
+
+### Create a new order for Table 1
+POST {{baseUrl}}/api/orders
+Content-Type: {{contentType}}
 
 {
     "tableNumber": "8",
     "status": "PENDING",
     "items": [
         {
-            "itemName": "Margherita Pizza",
+            "itemName": "Spaghetti Carbonara",
             "quantity": 2,
-            "price": 12.99,
-            "specialInstructions": "Extra cheese"
+            "price": 14.99,
+            "specialInstructions": "Extra bacon"
         },
         {
-            "itemName": "Caesar Salad",
+            "itemName": "Garlic Bread",
             "quantity": 1,
-            "price": 8.99,
-            "specialInstructions": "No croutons"
+            "price": 5.99
         }
     ],
     "waiterId": 2  

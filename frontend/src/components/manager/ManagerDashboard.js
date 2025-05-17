@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import SockJS from 'sockjs-client';
+import { Stomp } from '@stomp/stompjs';
 import {
     Box,
     Heading,
@@ -32,38 +34,181 @@ const ManagerDashboard = () => {
     const [recentOrders, setRecentOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [stompClient, setStompClient] = useState(null);
 
     const cardBg = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
 
     useEffect(() => {
-        fetchDashboardData();
-        const interval = setInterval(fetchDashboardData, 10000);
-        return () => clearInterval(interval);
+        connectWebSocket();
+        return () => {
+            if (stompClient) {
+                stompClient.disconnect();
+            }
+        };
     }, []);
 
-    const fetchDashboardData = async () => {
-        setLoading(true);
+    const connectWebSocket = () => {
         try {
-            // Fetch order statistics
-            const statsResponse = await fetch('http://localhost:8080/api/manager/stats');
-            if (!statsResponse.ok) throw new Error('Failed to fetch stats');
-            const statsData = await statsResponse.json();
-            setStats(statsData);
+            console.log('Attempting to connect to WebSocket...');
+            const socket = new SockJS('http://localhost:8080/ws');
+            const client = Stomp.over(socket);
 
-            // Fetch recent orders
-            const ordersResponse = await fetch('http://localhost:8080/api/manager/orders/recent');
-            if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
-            const ordersData = await ordersResponse.json();
-            console.log('Recent orders data:', ordersData); // Debug log
-            setRecentOrders(Array.isArray(ordersData) ? ordersData : []);
-            setError('');
+            client.debug = (str) => {
+                console.log('STOMP Debug:', str);
+            };
+
+            const onConnect = (frame) => {
+                console.log('WebSocket connected:', frame);
+                setLoading(false);
+                
+                // Subscribe to recent orders
+                client.subscribe('/app/orders/recent', (message) => {
+                    try {
+                        const orders = JSON.parse(message.body);
+                        console.log('Received recent orders:', orders);
+                        setRecentOrders(orders);
+                    } catch (error) {
+                        console.error('Error parsing recent orders:', error);
+                    }
+                });
+
+                // Subscribe to order statistics
+                client.subscribe('/app/orders/stats', (message) => {
+                    try {
+                        const stats = JSON.parse(message.body);
+                        console.log('Received order stats:', stats);
+                        setStats(stats);
+                    } catch (error) {
+                        console.error('Error parsing order stats:', error);
+                    }
+                });
+
+                // Subscribe to kitchen status updates
+                client.subscribe('/topic/kitchen/status', (message) => {
+                    try {
+                        const orderUpdate = JSON.parse(message.body);
+                        console.log('Received kitchen status update:', orderUpdate);
+                        
+                        // Update orders list with proper state transition
+                        setRecentOrders(prevOrders => {
+                            const orderIndex = prevOrders.findIndex(order => 
+                                order.id === orderUpdate.id || 
+                                order.orderNumber === orderUpdate.orderNumber
+                            );
+                            
+                            if (orderIndex === -1) {
+                                // If order doesn't exist in our list, add it
+                                return [orderUpdate, ...prevOrders];
+                            }
+                            
+                            // Update existing order with proper state transition
+                            const updatedOrders = [...prevOrders];
+                            const existingOrder = updatedOrders[orderIndex];
+                            
+                            // Store the previous status before updating
+                            const previousStatus = existingOrder.status;
+                            
+                            updatedOrders[orderIndex] = {
+                                ...existingOrder,
+                                ...orderUpdate,
+                                previousStatus: previousStatus,
+                                updatedAt: orderUpdate.updatedAt || new Date().toISOString()
+                            };
+                            
+                            return updatedOrders;
+                        });
+
+                        // Update stats with proper state transition
+                        setStats(prevStats => {
+                            const newStats = { ...prevStats };
+                            
+                            // If we have a previous status, decrement its counter
+                            if (orderUpdate.previousStatus) {
+                                const oldStatusKey = `${orderUpdate.previousStatus.toLowerCase()}Orders`;
+                                if (oldStatusKey in newStats) {
+                                    newStats[oldStatusKey] = Math.max(0, newStats[oldStatusKey] - 1);
+                                }
+                            }
+                            
+                            // Increment the counter for the new status
+                            const newStatusKey = `${orderUpdate.status.toLowerCase()}Orders`;
+                            if (newStatusKey in newStats) {
+                                newStats[newStatusKey] = (newStats[newStatusKey] || 0) + 1;
+                            }
+                            
+                            return newStats;
+                        });
+                    } catch (error) {
+                        console.error('Error handling status update:', error);
+                    }
+                });
+
+                // Subscribe to new orders
+                client.subscribe('/topic/orders/new', (message) => {
+                    try {
+                        const newOrder = JSON.parse(message.body);
+                        console.log('Received new order:', newOrder);
+                        
+                        // Update recent orders with deduplication
+                        setRecentOrders(prevOrders => {
+                            // Check if order already exists
+                            const orderExists = prevOrders.some(order => 
+                                order.id === newOrder.id || 
+                                order.orderNumber === newOrder.orderNumber
+                            );
+                            
+                            if (orderExists) {
+                                console.log('Order already exists, skipping:', newOrder.orderNumber);
+                                return prevOrders;
+                            }
+                            
+                            // Since this is a new order, update the stats
+                            setStats(prevStats => ({
+                                ...prevStats,
+                                totalOrders: prevStats.totalOrders + 1,
+                                pendingOrders: prevStats.pendingOrders + 1
+                            }));
+                            
+                            // Add new order at the beginning of the list
+                            return [{
+                                ...newOrder,
+                                createdAt: newOrder.createdAt || new Date().toISOString()
+                            }, ...prevOrders];
+                        });
+                    } catch (error) {
+                        console.error('Error handling new order:', error);
+                    }
+                });
+
+                setStompClient(client);
+            };
+
+            const onError = (error) => {
+                console.error('WebSocket connection error:', error);
+                setError('Failed to connect to WebSocket');
+                setLoading(false);
+                if (stompClient) {
+                    try {
+                        stompClient.disconnect();
+                    } catch (e) {
+                        console.error('Error during disconnect:', e);
+                    }
+                }
+                setTimeout(connectWebSocket, 5000);
+            };
+
+            client.connect({
+                'heart-beat': '10000,10000',
+                'accept-version': '1.1,1.2'
+            }, onConnect, onError);
+
         } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-            setError('Failed to load dashboard data');
-            setRecentOrders([]); // Set empty array on error
+            console.error('Error in connectWebSocket:', error);
+            setError('Failed to initialize WebSocket connection');
+            setLoading(false);
+            setTimeout(connectWebSocket, 5000);
         }
-        setLoading(false);
     };
 
     const getStatusColor = (status) => {
@@ -99,7 +244,6 @@ const ManagerDashboard = () => {
                     Manager Dashboard
                 </Heading>
 
-                {/* Statistics Cards */}
                 <SimpleGrid columns={{ base: 1, md: 3, lg: 5 }} spacing={6} mb={8}>
                     <StatCard
                         label="Total Orders"
@@ -132,8 +276,7 @@ const ManagerDashboard = () => {
                     />
                 </SimpleGrid>
 
-                {/* Recent Orders Table */}
-                <Box bg={cardBg} borderRadius="xl" boxShadow="xl" overflow="hidden">
+                <Box bg={cardBg} borderRadius="xl" boxShadow="xl">
                     <Heading size="md" p={6} borderBottom="1px" borderColor={borderColor}>
                         Recent Orders
                     </Heading>
@@ -185,12 +328,10 @@ const ManagerDashboard = () => {
 };
 
 const StatCard = ({ label, value, bg, accentColor }) => (
-    <Box bg={bg} borderRadius="lg" p={6} boxShadow="xl">
+    <Box bg={bg} borderRadius="xl" boxShadow="xl" p={6}>
         <Stat>
-            <StatLabel color="gray.500" fontSize="sm">{label}</StatLabel>
-            <StatNumber fontSize="2xl" color={accentColor || 'gray.900'}>
-                {value}
-            </StatNumber>
+            <StatLabel fontSize="lg" color="gray.500">{label}</StatLabel>
+            <StatNumber fontSize="3xl" color={accentColor}>{value}</StatNumber>
         </Stat>
     </Box>
 );

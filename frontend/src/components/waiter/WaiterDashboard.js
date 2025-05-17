@@ -1,86 +1,169 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import {
-    Box,
-    Button,
-    Container,
-    Heading,
-    SimpleGrid,
-    Text,
-    Badge,
-    VStack,
-    HStack,
-    useColorModeValue,
+import SockJS from 'sockjs-client';
+import { Stomp } from '@stomp/stompjs';
+import { 
+    Box, 
+    Heading, 
+    Text, 
+    SimpleGrid, 
+    Flex, 
+    Badge, 
+    Button, 
+    Stack,
+    Divider,
     Spinner,
-    Flex,
-    Stat,
-    StatLabel,
-    StatNumber,
-    Divider
+    useToast
 } from '@chakra-ui/react';
 
 const WaiterDashboard = () => {
-    const [orders, setOrders] = useState({
-        readyOrders: [],
-        activeOrders: [],
-        completedOrders: []
-    });
+    const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const { user } = useAuth();
-
-    const cardBg = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.700');
+    const [stompClient, setStompClient] = useState(null);
+    const toast = useToast();
 
     useEffect(() => {
-        fetchOrders();
-        const interval = setInterval(fetchOrders, 5000);
-        return () => clearInterval(interval);
+        connectWebSocket();
+        return () => {
+            if (stompClient) {
+                stompClient.disconnect();
+            }
+        };
     }, []);
 
-    const fetchOrders = async () => {
-        setLoading(true);
+    const connectWebSocket = () => {
         try {
-            const [readyRes, activeRes, completedRes] = await Promise.all([
-                fetch(`http://localhost:8080/api/waiter/orders/${user.id}/ready`),
-                fetch(`http://localhost:8080/api/waiter/orders/${user.id}/active`),
-                fetch(`http://localhost:8080/api/waiter/orders/${user.id}/completed`)
-            ]);
+            console.log('Connecting to WebSocket...');
+            const socket = new SockJS('http://localhost:8080/ws');
+            const client = Stomp.over(socket);
 
-            const [readyData, activeData, completedData] = await Promise.all([
-                readyRes.json(),
-                activeRes.json(),
-                completedRes.json()
-            ]);
+            client.debug = (str) => {
+                console.log('STOMP Debug:', str);
+            };
 
-            setOrders({
-                readyOrders: Array.isArray(readyData) ? readyData : [],
-                activeOrders: Array.isArray(activeData) ? activeData : [],
-                completedOrders: Array.isArray(completedData) ? completedData : []
-            });
-            setError('');
+            const onConnect = (frame) => {
+                console.log('WebSocket connected:', frame);
+                setLoading(false);
+
+                // Subscribe to ready orders
+                client.subscribe('/topic/kitchen/ready', (message) => {
+                    try {
+                        const readyOrder = JSON.parse(message.body);
+                        console.log('Received ready order:', readyOrder);
+                        
+                        setOrders(prevOrders => {
+                            // Check if order exists and update it, or add if new
+                            const orderIndex = prevOrders.findIndex(order => 
+                                order.id === readyOrder.id || 
+                                order.orderNumber === readyOrder.orderNumber
+                            );
+                            
+                            if (orderIndex !== -1) {
+                                // Update existing order
+                                const updatedOrders = [...prevOrders];
+                                updatedOrders[orderIndex] = {
+                                    ...prevOrders[orderIndex],
+                                    ...readyOrder,
+                                    status: 'READY',
+                                    readyAt: readyOrder.readyAt || new Date().toISOString()
+                                };
+                                return updatedOrders;
+                            }
+                            
+                            // Add new ready order
+                            const processedOrder = {
+                                ...readyOrder,
+                                status: 'READY',
+                                readyAt: readyOrder.readyAt || new Date().toISOString()
+                            };
+                            
+                            return [...prevOrders, processedOrder];
+                        });
+                        
+                        toast({
+                            title: 'Order Ready',
+                            description: `Order #${readyOrder.orderNumber} for Table ${readyOrder.tableNumber} is ready for delivery`,
+                            status: 'success',
+                            duration: 5000,
+                            isClosable: true,
+                        });
+                    } catch (error) {
+                        console.error('Error handling ready order:', error);
+                    }
+                });
+
+                // Subscribe to delivered orders to remove them from the list
+                client.subscribe('/topic/orders/delivered', (message) => {
+                    try {
+                        const deliveredOrder = JSON.parse(message.body);
+                        console.log('Order delivered:', deliveredOrder);
+                        setOrders(prevOrders => 
+                            prevOrders.filter(order => order.id !== deliveredOrder.id)
+                        );
+                    } catch (error) {
+                        console.error('Error handling delivered order:', error);
+                    }
+                });
+
+                // Get initial ready orders
+                client.subscribe('/app/kitchen/ready-orders', (message) => {
+                    try {
+                        const readyOrders = JSON.parse(message.body);
+                        console.log('Initial ready orders:', readyOrders);
+                        setOrders(readyOrders);
+                    } catch (error) {
+                        console.error('Error parsing ready orders:', error);
+                    }
+                });
+
+                setStompClient(client);
+            };
+
+            const onError = (error) => {
+                console.error('WebSocket connection error:', error);
+                setError('Failed to connect to WebSocket');
+                setLoading(false);
+                setTimeout(connectWebSocket, 5000);
+            };
+
+            client.connect({
+                'heart-beat': '10000,10000',
+                'accept-version': '1.1,1.2'
+            }, onConnect, onError);
+
         } catch (error) {
-            console.error('Error fetching orders:', error);
-            setError('Failed to load orders');
+            console.error('Error in connectWebSocket:', error);
+            setError('Failed to initialize WebSocket connection');
+            setLoading(false);
+            setTimeout(connectWebSocket, 5000);
         }
-        setLoading(false);
     };
 
-    const markOrderAsDelivered = async (orderId) => {
-        try {
-            const response = await fetch(`http://localhost:8080/api/waiter/orders/${orderId}/deliver`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+    const markAsDelivered = (orderId) => {
+        if (!stompClient || !stompClient.connected) {
+            toast({
+                title: 'Connection Error',
+                description: 'Not connected to WebSocket',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
             });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            fetchOrders();
-        } catch (error) {
-            console.error('Error marking order as delivered:', error);
+            return;
         }
+
+        const payload = {
+            orderId: orderId,
+            status: 'DELIVERED'
+        };
+
+        stompClient.send('/app/kitchen/update-status', {}, JSON.stringify(payload));
+    };
+
+    const formatTime = (dateString) => {
+        return new Date(dateString).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit'
+        });
     };
 
     if (loading) {
@@ -100,134 +183,68 @@ const WaiterDashboard = () => {
     }
 
     return (
-        <Box minH="100vh" bgGradient="linear(to-br, teal.50, blue.50, purple.50)" p={6}>
-            <Container maxW="container.xl">
-                <Heading mb={8} color="teal.600" fontWeight="bold" textAlign="center">
-                    Waiter Dashboard
-                </Heading>
+        <Box p={6} bg="gray.50" minH="100vh">
+            <Heading mb={8} textAlign="center" color="teal.600">Waiter Dashboard</Heading>
+            {orders.length === 0 ? (
+                <Text textAlign="center" fontSize="lg">No orders ready for delivery</Text>
+            ) : (
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                    {orders.map((order) => (
+                        <Box key={order.id} bg="white" p={6} borderRadius="lg" boxShadow="md">
+                            <Flex justify="space-between" align="flex-start" mb={4}>
+                                <Box>
+                                    <Heading size="md">Order #{order.orderNumber}</Heading>
+                                    <Text color="gray.600">Table {order.tableNumber}</Text>
+                                    <Text fontSize="sm" color="gray.500">
+                                        Ordered at: {formatTime(order.createdAt)}
+                                    </Text>
+                                </Box>
+                                <Badge 
+                                    colorScheme="green"
+                                    p={2}
+                                    borderRadius="md"
+                                >
+                                    READY
+                                </Badge>
+                            </Flex>
 
-                {/* Stats Overview */}
-                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} mb={8}>
-                    <StatCard
-                        label="Ready for Delivery"
-                        value={orders.readyOrders.length}
-                        bg={cardBg}
-                        accentColor="green.500"
-                    />
-                    <StatCard
-                        label="Active Orders"
-                        value={orders.activeOrders.length}
-                        bg={cardBg}
-                        accentColor="blue.500"
-                    />
-                    <StatCard
-                        label="Completed Today"
-                        value={orders.completedOrders.length}
-                        bg={cardBg}
-                        accentColor="gray.500"
-                    />
+                            <Divider my={4} />
+
+                            <Stack spacing={2}>
+                                {order.items?.map((item, index) => (
+                                    <Box key={index}>
+                                        <Flex justify="space-between">
+                                            <Text fontWeight="medium">
+                                                {item.quantity}x {item.itemName}
+                                            </Text>
+                                            <Text color="gray.600">
+                                                ${(item.price * item.quantity).toFixed(2)}
+                                            </Text>
+                                        </Flex>
+                                        {item.specialInstructions && (
+                                            <Text fontSize="sm" color="gray.500" ml={4}>
+                                                Note: {item.specialInstructions}
+                                            </Text>
+                                        )}
+                                    </Box>
+                                ))}
+                            </Stack>
+
+                            <Divider my={4} />
+
+                            <Button 
+                                colorScheme="green"
+                                width="100%"
+                                onClick={() => markAsDelivered(order.id)}
+                            >
+                                Mark as Delivered
+                            </Button>
+                        </Box>
+                    ))}
                 </SimpleGrid>
-
-                {/* Ready Orders */}
-                <Box mb={8}>
-                    <Heading size="md" mb={4}>Orders Ready for Delivery</Heading>
-                    {orders.readyOrders.length === 0 ? (
-                        <Text textAlign="center" color="gray.500" py={4}>
-                            No orders ready for delivery
-                        </Text>
-                    ) : (
-                        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                            {orders.readyOrders.map((order) => (
-                                <OrderCard
-                                    key={order.id}
-                                    order={order}
-                                    onDeliver={markOrderAsDelivered}
-                                    bg={cardBg}
-                                />
-                            ))}
-                        </SimpleGrid>
-                    )}
-                </Box>
-
-                {/* Active Orders */}
-                <Box mb={8}>
-                    <Heading size="md" mb={4}>Active Orders</Heading>
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                        {orders.activeOrders.map((order) => (
-                            <OrderCard
-                                key={order.id}
-                                order={order}
-                                showDeliverButton={false}
-                                bg={cardBg}
-                            />
-                        ))}
-                    </SimpleGrid>
-                </Box>
-            </Container>
+            )}
         </Box>
     );
 };
-
-const OrderCard = ({ order, onDeliver, showDeliverButton = true, bg }) => (
-    <Box bg={bg} borderRadius="xl" boxShadow="xl" p={6}>
-        <Flex justify="space-between" align="flex-start" mb={4}>
-            <Box>
-                <Heading size="md">Order #{order.orderNumber}</Heading>
-                <Text color="gray.500">Table {order.tableNumber}</Text>
-            </Box>
-            <Badge
-                colorScheme={order.status === 'READY' ? 'green' : 'blue'}
-                borderRadius="full"
-                px={3}
-                py={1}
-            >
-                {order.status}
-            </Badge>
-        </Flex>
-
-        <VStack align="stretch" spacing={4}>
-            <Box>
-                <Text fontWeight="semibold" mb={2}>Items:</Text>
-                <VStack align="stretch" spacing={1}>
-                    {order.items?.map((item, index) => (
-                        <HStack key={index} justify="space-between">
-                            <Text>{item.quantity}x {item.itemName}</Text>
-                            <Text color="gray.500">${item.price?.toFixed(2)}</Text>
-                        </HStack>
-                    ))}
-                </VStack>
-            </Box>
-
-            <Divider />
-
-            <HStack justify="space-between">
-                <Text fontWeight="semibold">Total:</Text>
-                <Text fontWeight="bold">${order.totalPrice?.toFixed(2) || '0.00'}</Text>
-            </HStack>
-
-            {showDeliverButton && order.status === 'READY' && (
-                <Button
-                    colorScheme="green"
-                    size="md"
-                    onClick={() => onDeliver(order.id)}
-                    width="100%"
-                >
-                    Mark as Delivered
-                </Button>
-            )}
-        </VStack>
-    </Box>
-);
-
-const StatCard = ({ label, value, bg, accentColor }) => (
-    <Box bg={bg} borderRadius="lg" p={6} boxShadow="xl">
-        <Stat>
-            <StatLabel color="gray.500" fontSize="sm">{label}</StatLabel>
-            <StatNumber fontSize="2xl" color={accentColor || 'gray.900'}>
-                {value}
-            </StatNumber>
-        </Stat>
-    </Box>
-);
 
 export default WaiterDashboard; 

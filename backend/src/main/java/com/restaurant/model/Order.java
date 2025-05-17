@@ -2,6 +2,7 @@ package com.restaurant.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,6 +24,9 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus status;
 
+    @Enumerated(EnumType.STRING)
+    private OrderStatus previousStatus;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -34,6 +38,7 @@ public class Order {
     @JoinColumn(name = "waiter_id")
     private User waiter;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> items;
 
