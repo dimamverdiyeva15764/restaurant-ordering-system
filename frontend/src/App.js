@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -9,7 +9,6 @@ import CustomerNavbar from './components/CustomerNavbar';
 import TableScanner from './components/TableScanner';
 import Menu from './components/Menu';
 import Cart from './components/Cart';
-import OrderStatus from './components/OrderStatus';
 
 const theme = createTheme({
   palette: {
@@ -26,17 +25,14 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CartProvider>
-        <Router>
-          <CustomerNavbar />
-          <Routes>
-            <Route path="/" element={<TableScanner />} />
-            <Route path="/menu" element={<Menu />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/order-status/:orderId" element={<OrderStatus />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <ToastContainer position="bottom-right" />
-        </Router>
+        <CustomerNavbar />
+        <Routes>
+          <Route path="/" element={<TableScanner />} />
+          <Route path="/menu" element={<Menu />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <ToastContainer position="bottom-right" />
       </CartProvider>
     </ThemeProvider>
   );

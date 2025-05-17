@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/menu")
-@CrossOrigin(origins = "*")
+@RequestMapping("/menu")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class MenuController {
     private final MenuService menuService;
 

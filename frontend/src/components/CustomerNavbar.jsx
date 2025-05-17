@@ -19,7 +19,7 @@ import { useCart } from '../context/CartContext';
 const CustomerNavbar = () => {
   const navigate = useNavigate();
   const { cartItems } = useCart();
-
+  const tableId = sessionStorage.getItem('tableId');
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -32,6 +32,7 @@ const CustomerNavbar = () => {
           onClick={() => navigate('/menu')}
         >
           Restaurant Ordering
+          {tableId && <Typography variant="caption" sx={{ ml: 2 }}>Table #{tableId}</Typography>}
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
