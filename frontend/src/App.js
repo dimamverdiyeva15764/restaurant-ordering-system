@@ -12,6 +12,7 @@ import Unauthorized from './components/auth/Unauthorized';
 import MenuPage from './components/MenuPage';
 import OrderStatusPage from './components/OrderStatusPage';
 import WelcomePage from './components/WelcomePage';
+import TableSelection from './components/TableSelection';
 
 function App() {
     return (
@@ -22,6 +23,7 @@ function App() {
                         <Routes>
                             {/* Public Routes */}
                             <Route path="/" element={<WelcomePage />} />
+                            <Route path="/tables" element={<TableSelection />} />
                             <Route path="/menu" element={<MenuPage />} />
                             <Route path="/login" element={<Login />} />
                             <Route path="/unauthorized" element={<Unauthorized />} />

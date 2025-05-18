@@ -44,11 +44,6 @@ public class TableController {
         return ResponseEntity.ok(tableService.getTablesByStatus(status));
     }
 
-    @GetMapping("/waiter/{waiterId}")
-    public ResponseEntity<List<RestaurantTable>> getTablesByWaiter(@PathVariable Long waiterId) {
-        return ResponseEntity.ok(tableService.getTablesByWaiter(waiterId));
-    }
-
     @PutMapping("/{id}")
     public ResponseEntity<RestaurantTable> updateTable(@PathVariable Long id, @Valid @RequestBody RestaurantTable table) {
         table.setId(id);
@@ -60,18 +55,6 @@ public class TableController {
             @PathVariable Long id,
             @RequestParam TableStatus status) {
         return ResponseEntity.ok(tableService.updateTableStatus(id, status));
-    }
-
-    @PutMapping("/{id}/assign")
-    public ResponseEntity<RestaurantTable> assignWaiter(
-            @PathVariable Long id,
-            @RequestParam Long waiterId) {
-        return ResponseEntity.ok(tableService.assignWaiter(id, waiterId));
-    }
-
-    @PutMapping("/{id}/unassign")
-    public ResponseEntity<RestaurantTable> unassignWaiter(@PathVariable Long id) {
-        return ResponseEntity.ok(tableService.unassignWaiter(id));
     }
 
     @DeleteMapping("/{id}")

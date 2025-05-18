@@ -12,8 +12,5 @@ public interface TableService {
     RestaurantTable getTableByNumber(String tableNumber);
     List<RestaurantTable> getAllTables();
     List<RestaurantTable> getTablesByStatus(TableStatus status);
-    List<RestaurantTable> getTablesByWaiter(Long waiterId);
     RestaurantTable updateTableStatus(Long id, TableStatus status);
-    RestaurantTable assignWaiter(Long tableId, Long waiterId);
-    RestaurantTable unassignWaiter(Long tableId);
 } 

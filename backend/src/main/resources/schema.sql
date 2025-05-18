@@ -54,6 +54,7 @@ CREATE TABLE restaurant_tables (
     table_number VARCHAR(20) UNIQUE NOT NULL,
     capacity INT NOT NULL,
     status VARCHAR(20) DEFAULT 'AVAILABLE',
+    location VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -43,9 +43,9 @@ const WelcomePage = () => {
                                 colorScheme="teal"
                                 size="lg"
                                 w="full"
-                                onClick={() => navigate('/menu')}
+                                onClick={() => navigate('/tables')}
                             >
-                                View Our Menu
+                                Select Your Table
                             </Button>
 
                             <Button

@@ -23,10 +23,6 @@ public class RestaurantTable {
 
     private String location;
 
-    @ManyToOne
-    @JoinColumn(name = "assigned_waiter_id")
-    private User assignedWaiter;
-
     // Constructors
     public RestaurantTable() {}
 
@@ -75,13 +71,5 @@ public class RestaurantTable {
 
     public void setLocation(String location) {
         this.location = location;
-    }
-
-    public User getAssignedWaiter() {
-        return assignedWaiter;
-    }
-
-    public void setAssignedWaiter(User assignedWaiter) {
-        this.assignedWaiter = assignedWaiter;
     }
 } 

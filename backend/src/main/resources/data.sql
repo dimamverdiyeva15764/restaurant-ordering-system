@@ -119,13 +119,24 @@ VALUES
         true, true, true, true, 0);
 
 -- Insert restaurant tables
-INSERT INTO restaurant_tables (table_number, capacity, status)
+INSERT INTO restaurant_tables (table_number, capacity, status, location)
 VALUES 
-    ('T1', 4, 'AVAILABLE'),
-    ('T2', 4, 'AVAILABLE'),
-    ('T3', 6, 'AVAILABLE'),
-    ('T4', 2, 'AVAILABLE'),
-    ('T5', 8, 'AVAILABLE');
+    ('T1', 4, 'AVAILABLE', 'Main Floor'),
+    ('T2', 4, 'AVAILABLE', 'Main Floor'),
+    ('T3', 4, 'AVAILABLE', 'Main Floor'),
+    ('T4', 4, 'AVAILABLE', 'Main Floor'),
+    ('T5', 4, 'AVAILABLE', 'Window Side'),
+    ('T6', 4, 'AVAILABLE', 'Window Side'),
+    ('T7', 4, 'AVAILABLE', 'Window Side'),
+    ('T8', 4, 'AVAILABLE', 'Window Side'),
+    ('T9', 4, 'AVAILABLE', 'Outdoor Patio'),
+    ('T10', 4, 'AVAILABLE', 'Outdoor Patio'),
+    ('T11', 4, 'AVAILABLE', 'Outdoor Patio'),
+    ('T12', 4, 'AVAILABLE', 'Outdoor Patio'),
+    ('T13', 4, 'AVAILABLE', 'Private Area'),
+    ('T14', 4, 'AVAILABLE', 'Private Area'),
+    ('T15', 4, 'AVAILABLE', 'Private Area'),
+    ('T16', 4, 'AVAILABLE', 'Private Area');
 
 -- Insert sample order
 INSERT INTO orders (order_number, table_number, status, created_at, updated_at)

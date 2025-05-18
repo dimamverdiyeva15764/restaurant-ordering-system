@@ -12,25 +12,39 @@ import {
     Stack,
     Divider,
     Spinner,
-    useToast
+    useToast,
+    VStack
 } from '@chakra-ui/react';
 import LogoutButton from '../common/LogoutButton';
+import axios from 'axios';
 
 const WaiterDashboard = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [stompClient, setStompClient] = useState(null);
+    const [tables, setTables] = useState([]);
     const toast = useToast();
 
     useEffect(() => {
         connectWebSocket();
+        fetchTables();
         return () => {
             if (stompClient) {
                 stompClient.disconnect();
             }
         };
     }, []);
+
+    const fetchTables = async () => {
+        try {
+            const response = await axios.get('http://localhost:8080/api/tables');
+            const cleaningTables = response.data.filter(table => table.status === 'CLEANING');
+            setTables(cleaningTables);
+        } catch (error) {
+            console.error('Error fetching tables:', error);
+        }
+    };
 
     const connectWebSocket = () => {
         try {
@@ -140,7 +154,7 @@ const WaiterDashboard = () => {
         }
     };
 
-    const markAsDelivered = (orderId) => {
+    const markAsDelivered = async (orderId, tableNumber) => {
         if (!stompClient || !stompClient.connected) {
             toast({
                 title: 'Connection Error',
@@ -152,12 +166,63 @@ const WaiterDashboard = () => {
             return;
         }
 
-        const payload = {
-            orderId: orderId,
-            status: 'DELIVERED'
-        };
+        try {
+            // Mark order as delivered
+            const payload = {
+                orderId: orderId,
+                status: 'DELIVERED'
+            };
+            stompClient.send('/app/kitchen/update-status', {}, JSON.stringify(payload));
 
-        stompClient.send('/app/kitchen/update-status', {}, JSON.stringify(payload));
+            // Update table status to CLEANING
+            const tableResponse = await axios.get(`http://localhost:8080/api/tables/number/${tableNumber}`);
+            const table = tableResponse.data;
+            await axios.put(`http://localhost:8080/api/tables/${table.id}/status?status=CLEANING`);
+            
+            // Refresh tables list
+            fetchTables();
+
+            toast({
+                title: 'Order Delivered',
+                description: `Order delivered and table ${tableNumber} marked for cleaning`,
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+            });
+        } catch (error) {
+            console.error('Error updating table status:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to update table status',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+        }
+    };
+
+    const markTableAsClean = async (tableId, tableNumber) => {
+        try {
+            await axios.put(`http://localhost:8080/api/tables/${tableId}/status?status=AVAILABLE`);
+            setTables(prevTables => prevTables.filter(table => table.id !== tableId));
+            
+            toast({
+                title: 'Table Available',
+                description: `Table ${tableNumber} is now clean and available`,
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+            });
+        } catch (error) {
+            console.error('Error marking table as clean:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to update table status',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+        }
     };
 
     const formatTime = (dateString) => {
@@ -187,6 +252,38 @@ const WaiterDashboard = () => {
         <Box p={6} bg="gray.50" minH="100vh" position="relative">
             <LogoutButton />
             <Heading mb={8} textAlign="center" color="teal.600">Waiter Dashboard</Heading>
+            
+            {/* Tables that need cleaning */}
+            {tables.length > 0 && (
+                <Box mb={8}>
+                    <Heading size="md" mb={4} color="blue.600">Tables Needing Cleaning</Heading>
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                        {tables.map((table) => (
+                            <Box
+                                key={table.id}
+                                bg="white"
+                                p={4}
+                                borderRadius="lg"
+                                boxShadow="md"
+                            >
+                                <VStack align="stretch" spacing={3}>
+                                    <Heading size="sm">Table {table.tableNumber}</Heading>
+                                    <Text color="gray.600">Location: {table.location}</Text>
+                                    <Button
+                                        colorScheme="blue"
+                                        onClick={() => markTableAsClean(table.id, table.tableNumber)}
+                                    >
+                                        Mark as Clean
+                                    </Button>
+                                </VStack>
+                            </Box>
+                        ))}
+                    </SimpleGrid>
+                </Box>
+            )}
+
+            {/* Ready Orders */}
+            <Heading size="md" mb={4} color="teal.600">Ready Orders</Heading>
             {orders.length === 0 ? (
                 <Text textAlign="center" fontSize="lg">No orders ready for delivery</Text>
             ) : (
@@ -212,7 +309,7 @@ const WaiterDashboard = () => {
 
                             <Divider my={4} />
 
-                            <Stack spacing={2}>
+                            <Stack spacing={3}>
                                 {order.items?.map((item, index) => (
                                     <Box key={index}>
                                         <Flex justify="space-between">
@@ -237,7 +334,7 @@ const WaiterDashboard = () => {
                             <Button 
                                 colorScheme="green"
                                 width="100%"
-                                onClick={() => markAsDelivered(order.id)}
+                                onClick={() => markAsDelivered(order.id, order.tableNumber)}
                             >
                                 Mark as Delivered
                             </Button>

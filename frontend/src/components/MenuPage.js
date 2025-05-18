@@ -15,13 +15,6 @@ import {
     useToast,
     Spinner,
     Select,
-<<<<<<< HEAD
-    Flex,
-    IconButton,
-=======
-    HStack,
-    Badge,
-    Image,
     Flex,
     Tag,
     TagLabel,
@@ -29,7 +22,7 @@ import {
     Divider,
     useColorModeValue,
     Icon,
->>>>>>> ac1c401ec616e9e321310288fe75f8236eaf1f3c
+    IconButton,
     Drawer,
     DrawerBody,
     DrawerFooter,
@@ -37,35 +30,17 @@ import {
     DrawerOverlay,
     DrawerContent,
     DrawerCloseButton,
-<<<<<<< HEAD
-=======
     useDisclosure,
-    IconButton,
     Input,
->>>>>>> ac1c401ec616e9e321310288fe75f8236eaf1f3c
     Modal,
     ModalOverlay,
     ModalContent,
     ModalHeader,
     ModalFooter,
     ModalBody,
-<<<<<<< HEAD
-    ModalCloseButton,
-    Input,
-    useDisclosure,
-    Divider,
-    Tag,
-    TagLabel,
-    TagLeftIcon,
-    useColorModeValue,
-    Icon
-} from '@chakra-ui/react';
-import { FaShoppingCart, FaLeaf, FaSeedling, FaBreadSlice, FaPlus, FaMinus, FaTrash } from 'react-icons/fa';
-import { GiChiliPepper } from 'react-icons/gi';
-=======
     ModalCloseButton
 } from '@chakra-ui/react';
-import { FaLeaf, FaSeedling, FaBreadSlice, FaShoppingCart, FaPlus, FaMinus, FaTrash } from 'react-icons/fa';
+import { FaShoppingCart, FaLeaf, FaSeedling, FaBreadSlice, FaPlus, FaMinus, FaTrash } from 'react-icons/fa';
 import { GiChiliPepper } from 'react-icons/gi';
 
 // Example menu data
@@ -164,13 +139,11 @@ const exampleCategories = [
     { id: 2, name: "Starters" },
     { id: 3, name: "Desserts" }
 ];
->>>>>>> ac1c401ec616e9e321310288fe75f8236eaf1f3c
 
 const MenuPage = () => {
-    const [menuItems, setMenuItems] = useState(exampleMenuItems);
-    const [categories, setCategories] = useState(exampleCategories);
+    const [menuItems, setMenuItems] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState('all');
-<<<<<<< HEAD
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState([]);
     const [tableNumber, setTableNumber] = useState('');
@@ -185,6 +158,11 @@ const MenuPage = () => {
 
     useEffect(() => {
         fetchMenuData();
+        // Get table number from session storage
+        const storedTableNumber = sessionStorage.getItem('selectedTable');
+        if (storedTableNumber) {
+            setTableNumber(storedTableNumber);
+        }
     }, []);
 
     const fetchMenuData = async () => {
@@ -218,19 +196,6 @@ const MenuPage = () => {
             setLoading(false);
         }
     };
-=======
-    const [loading, setLoading] = useState(false);
-    const [cart, setCart] = useState([]);
-    const [tableNumber, setTableNumber] = useState('');
-    const { createOrder, error: orderError } = useOrder();
-    const navigate = useNavigate();
-    const toast = useToast();
-    const { isOpen: isCartOpen, onOpen: onCartOpen, onClose: onCartClose } = useDisclosure();
-    const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure();
-
-    const bgColor = useColorModeValue('white', 'gray.700');
-    const borderColor = useColorModeValue('gray.200', 'gray.600');
->>>>>>> ac1c401ec616e9e321310288fe75f8236eaf1f3c
 
     const filteredItems = selectedCategory === 'all'
         ? menuItems
@@ -277,31 +242,6 @@ const MenuPage = () => {
         return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
     };
 
-    const handleConfirmOrder = async () => {
-        if (!tableNumber) {
-            toast({
-                title: 'Table number required',
-                description: 'Please enter your table number',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        if (cart.length === 0) {
-            toast({
-                title: 'Empty order',
-                description: 'Please add items to your order',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-<<<<<<< HEAD
-=======
     const renderSpicyLevel = (level) => {
         return level > 0 && (
             <HStack spacing={1}>
@@ -312,47 +252,6 @@ const MenuPage = () => {
         );
     };
 
-    const addToCart = (item) => {
-        setCart(prevCart => {
-            const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
-            if (existingItem) {
-                return prevCart.map(cartItem =>
-                    cartItem.id === item.id
-                        ? { ...cartItem, quantity: cartItem.quantity + 1 }
-                        : cartItem
-                );
-            }
-            return [...prevCart, { ...item, quantity: 1 }];
-        });
-        toast({
-            title: 'Added to cart',
-            description: `${item.name} has been added to your cart`,
-            status: 'success',
-            duration: 2000,
-            isClosable: true,
-        });
-    };
-
-    const updateQuantity = (itemId, change) => {
-        setCart(prevCart => {
-            return prevCart.map(item => {
-                if (item.id === itemId) {
-                    const newQuantity = item.quantity + change;
-                    return newQuantity > 0 ? { ...item, quantity: newQuantity } : null;
-                }
-                return item;
-            }).filter(Boolean);
-        });
-    };
-
-    const removeFromCart = (itemId) => {
-        setCart(prevCart => prevCart.filter(item => item.id !== itemId));
-    };
-
-    const calculateTotal = () => {
-        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-    };
-
     const handleConfirmOrder = async () => {
         if (!tableNumber) {
             toast({
@@ -365,13 +264,12 @@ const MenuPage = () => {
             return;
         }
 
->>>>>>> ac1c401ec616e9e321310288fe75f8236eaf1f3c
         try {
+            // Create the order
             const orderData = {
                 items: cart.map(item => ({
                     menuItemId: item.id,
                     quantity: item.quantity,
-<<<<<<< HEAD
                     specialInstructions: item.specialInstructions || '',
                     price: parseFloat(item.price),
                     itemName: item.name
@@ -387,55 +285,28 @@ const MenuPage = () => {
                 throw new Error('Invalid order response from server');
             }
 
-=======
-                    specialInstructions: '',
-                    price: item.price,
-                    itemName: item.name
-                })),
-                tableNumber: tableNumber
-            };
-            
-            await createOrder(orderData);
->>>>>>> ac1c401ec616e9e321310288fe75f8236eaf1f3c
             toast({
                 title: 'Order Confirmed!',
-                description: 'Your order has been sent to the kitchen',
+                description: 'Your order has been placed successfully',
                 status: 'success',
-                duration: 3000,
+                duration: 5000,
                 isClosable: true,
             });
-<<<<<<< HEAD
 
             setCart([]);
             onConfirmClose();
             onCartClose();
             navigate(`/status?orderId=${order.id}`);
-=======
-            setCart([]);
-            onConfirmClose();
-            onCartClose();
-            navigate('/status');
->>>>>>> ac1c401ec616e9e321310288fe75f8236eaf1f3c
         } catch (err) {
             console.error('Error creating order:', err);
             toast({
                 title: 'Error',
-                description: err.response?.data?.message || 'Failed to create order',
+                description: 'Failed to create order. Please try again.',
                 status: 'error',
-                duration: 3000,
+                duration: 5000,
                 isClosable: true,
             });
         }
-    };
-
-    const renderSpicyLevel = (level) => {
-        return level > 0 && (
-            <HStack spacing={1}>
-                {[...Array(level)].map((_, i) => (
-                    <Icon key={i} as={GiChiliPepper} color="red.500" />
-                ))}
-            </HStack>
-        );
     };
 
     if (loading) {
@@ -452,11 +323,9 @@ const MenuPage = () => {
                 <Flex justify="space-between" align="center">
                     <Box>
                         <Heading 
-                            mb={2}
-                            bgGradient="linear(to-r, teal.500, blue.500)"
+                            bgGradient="linear(to-r, teal.500, green.500)"
                             bgClip="text"
                             fontSize={{ base: "3xl", md: "4xl" }}
-<<<<<<< HEAD
                         >
                             Our Menu
                         </Heading>
@@ -591,135 +460,6 @@ const MenuPage = () => {
                         ))}
                     </Grid>
                 )}
-=======
-                        >
-                            Our Menu
-                        </Heading>
-                        <Text color="gray.600" fontSize="lg">
-                            Discover our carefully crafted dishes
-                        </Text>
-                    </Box>
-                    <IconButton
-                        icon={<FaShoppingCart />}
-                        onClick={onCartOpen}
-                        colorScheme="teal"
-                        size="lg"
-                        position="relative"
-                    >
-                        {cart.length > 0 && (
-                            <Badge
-                                position="absolute"
-                                top="-1"
-                                right="-1"
-                                colorScheme="red"
-                                borderRadius="full"
-                                px={2}
-                            >
-                                {cart.length}
-                            </Badge>
-                        )}
-                    </IconButton>
-                </Flex>
-                
-                <Select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    maxW="300px"
-                    mx="auto"
-                    size="lg"
-                    bg={bgColor}
-                    borderColor={borderColor}
-                >
-                    <option value="all">All Categories</option>
-                    {categories.map(category => (
-                        <option key={category.id} value={category.id}>
-                            {category.name}
-                        </option>
-                    ))}
-                </Select>
-
-                <Grid
-                    templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }}
-                    gap={6}
-                >
-                    {filteredItems.map((item) => (
-                        <Box
-                            key={item.id}
-                            bg={bgColor}
-                            borderRadius="lg"
-                            overflow="hidden"
-                            boxShadow="lg"
-                            transition="transform 0.2s"
-                            _hover={{ transform: 'translateY(-4px)' }}
-                        >
-                            <Box
-                                height="200px"
-                                overflow="hidden"
-                            >
-                                <Image
-                                    src={item.imageUrl}
-                                    alt={item.name}
-                                    width="100%"
-                                    height="100%"
-                                    objectFit="cover"
-                                    transition="transform 0.3s"
-                                    _hover={{ transform: 'scale(1.1)' }}
-                                />
-                            </Box>
-                            
-                            <Box p={6}>
-                                <VStack align="stretch" spacing={3}>
-                                    <Flex justify="space-between" align="center">
-                                        <Heading size="md">{item.name}</Heading>
-                                        {renderSpicyLevel(item.spicyLevel)}
-                                    </Flex>
-                                    
-                                    <Text color="gray.600" noOfLines={2}>
-                                        {item.description}
-                                    </Text>
-
-                                    <HStack spacing={2}>
-                                        {item.vegetarian && (
-                                            <Tag colorScheme="green" size="sm">
-                                                <TagLeftIcon as={FaLeaf} />
-                                                <TagLabel>Vegetarian</TagLabel>
-                                            </Tag>
-                                        )}
-                                        {item.vegan && (
-                                            <Tag colorScheme="green" size="sm">
-                                                <TagLeftIcon as={FaSeedling} />
-                                                <TagLabel>Vegan</TagLabel>
-                                            </Tag>
-                                        )}
-                                        {item.glutenFree && (
-                                            <Tag colorScheme="purple" size="sm">
-                                                <TagLeftIcon as={FaBreadSlice} />
-                                                <TagLabel>Gluten Free</TagLabel>
-                                            </Tag>
-                                        )}
-                                    </HStack>
-
-                                    <Divider />
-
-                                    <Flex justify="space-between" align="center">
-                                        <Text fontWeight="bold" fontSize="xl" color="teal.600">
-                                            ${item.price.toFixed(2)}
-                                        </Text>
-                                        <Button
-                                            colorScheme="teal"
-                                            onClick={() => addToCart(item)}
-                                            isDisabled={!item.available}
-                                            size="sm"
-                                        >
-                                            Add to Cart
-                                        </Button>
-                                    </Flex>
-                                </VStack>
-                            </Box>
-                        </Box>
-                    ))}
-                </Grid>
->>>>>>> ac1c401ec616e9e321310288fe75f8236eaf1f3c
             </VStack>
 
             {/* Shopping Cart Drawer */}
@@ -735,52 +475,60 @@ const MenuPage = () => {
                     <DrawerHeader>Your Cart</DrawerHeader>
 
                     <DrawerBody>
-                        {cart.length === 0 ? (
-                            <Text>Your cart is empty</Text>
-                        ) : (
-                            <VStack spacing={4} align="stretch">
-                                {cart.map(item => (
+                        <VStack spacing={4} align="stretch">
+                            {cart.length === 0 ? (
+                                <Text color="gray.500" textAlign="center">
+                                    Your cart is empty
+                                </Text>
+                            ) : (
+                                cart.map(item => (
                                     <Box
                                         key={item.id}
                                         p={4}
-                                        borderWidth="1px"
+                                        borderWidth={1}
                                         borderRadius="lg"
-                                        bg={bgColor}
+                                        position="relative"
                                     >
-                                        <Flex justify="space-between" align="center">
-                                            <VStack align="start" spacing={1}>
-                                                <Text fontWeight="bold">{item.name}</Text>
-                                                <Text color="teal.600">
-                                                    ${(item.price * item.quantity).toFixed(2)}
-                                                </Text>
-                                            </VStack>
-                                            <HStack>
-                                                <IconButton
-                                                    icon={<FaMinus />}
-                                                    size="sm"
-                                                    onClick={() => updateQuantity(item.id, -1)}
-                                                />
-                                                <Text>{item.quantity}</Text>
-                                                <IconButton
-                                                    icon={<FaPlus />}
-                                                    size="sm"
-                                                    onClick={() => updateQuantity(item.id, 1)}
-                                                />
+                                        <VStack align="stretch" spacing={2}>
+                                            <Flex justify="space-between" align="center">
+                                                <Heading size="sm">{item.name}</Heading>
                                                 <IconButton
                                                     icon={<FaTrash />}
-                                                    size="sm"
+                                                    variant="ghost"
                                                     colorScheme="red"
+                                                    size="sm"
                                                     onClick={() => removeFromCart(item.id)}
                                                 />
-                                            </HStack>
-                                        </Flex>
+                                            </Flex>
+                                            <Flex justify="space-between" align="center">
+                                                <Text color="gray.600">
+                                                    ${item.price.toFixed(2)} x {item.quantity}
+                                                </Text>
+                                                <HStack>
+                                                    <IconButton
+                                                        icon={<FaMinus />}
+                                                        size="xs"
+                                                        onClick={() => updateQuantity(item.id, -1)}
+                                                    />
+                                                    <Text>{item.quantity}</Text>
+                                                    <IconButton
+                                                        icon={<FaPlus />}
+                                                        size="xs"
+                                                        onClick={() => updateQuantity(item.id, 1)}
+                                                    />
+                                                </HStack>
+                                            </Flex>
+                                            <Text fontWeight="bold" textAlign="right">
+                                                ${(item.price * item.quantity).toFixed(2)}
+                                            </Text>
+                                        </VStack>
                                     </Box>
-                                ))}
-                            </VStack>
-                        )}
+                                ))
+                            )}
+                        </VStack>
                     </DrawerBody>
 
-                    <DrawerFooter>
+                    <DrawerFooter borderTopWidth={1}>
                         <VStack width="100%" spacing={4}>
                             <Text fontWeight="bold" fontSize="xl">
                                 Total: ${calculateTotal().toFixed(2)}
@@ -802,27 +550,42 @@ const MenuPage = () => {
             <Modal isOpen={isConfirmOpen} onClose={onConfirmClose}>
                 <ModalOverlay />
                 <ModalContent>
-                    <ModalHeader>Confirm Your Order</ModalHeader>
+                    <ModalHeader>Confirm Order</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
                         <VStack spacing={4} align="stretch">
-                            <Text>Please enter your table number:</Text>
+                            <Text>Your selected table:</Text>
                             <Input
-                                placeholder="Table Number"
                                 value={tableNumber}
-                                onChange={(e) => setTableNumber(e.target.value)}
+                                isReadOnly
+                                bg="gray.100"
+                                fontWeight="bold"
                             />
-                            <Text fontWeight="bold">
-                                Total Amount: ${calculateTotal().toFixed(2)}
-                            </Text>
+                            <Box borderWidth={1} borderRadius="lg" p={4}>
+                                <Text fontWeight="bold" mb={2}>Order Summary:</Text>
+                                {cart.map(item => (
+                                    <Flex key={item.id} justify="space-between" mb={2}>
+                                        <Text>{item.name} x {item.quantity}</Text>
+                                        <Text>${(item.price * item.quantity).toFixed(2)}</Text>
+                                    </Flex>
+                                ))}
+                                <Divider my={2} />
+                                <Flex justify="space-between" fontWeight="bold">
+                                    <Text>Total:</Text>
+                                    <Text>${calculateTotal().toFixed(2)}</Text>
+                                </Flex>
+                            </Box>
                         </VStack>
                     </ModalBody>
-
                     <ModalFooter>
-                        <Button colorScheme="gray" mr={3} onClick={onConfirmClose}>
+                        <Button variant="ghost" mr={3} onClick={onConfirmClose}>
                             Cancel
                         </Button>
-                        <Button colorScheme="teal" onClick={handleConfirmOrder}>
+                        <Button
+                            colorScheme="teal"
+                            onClick={handleConfirmOrder}
+                            isDisabled={!tableNumber || cart.length === 0}
+                        >
                             Confirm Order
                         </Button>
                     </ModalFooter>

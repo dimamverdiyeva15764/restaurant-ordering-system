@@ -2,12 +2,9 @@ package com.restaurant.service.impl;
 
 import com.restaurant.model.RestaurantTable;
 import com.restaurant.model.TableStatus;
-import com.restaurant.model.User;
 import com.restaurant.repository.RestaurantTableRepository;
-import com.restaurant.repository.UserRepository;
 import com.restaurant.service.TableService;
 import com.restaurant.exception.ResourceNotFoundException;
-import com.restaurant.exception.InvalidWaiterException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +16,6 @@ import java.util.List;
 public class TableServiceImpl implements TableService {
     
     private final RestaurantTableRepository tableRepository;
-    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -76,40 +72,10 @@ public class TableServiceImpl implements TableService {
     }
 
     @Override
-    public List<RestaurantTable> getTablesByWaiter(Long waiterId) {
-        User waiter = userRepository.findById(waiterId)
-            .orElseThrow(() -> new ResourceNotFoundException("Waiter", "id", waiterId));
-        return tableRepository.findByAssignedWaiter(waiter);
-    }
-
-    @Override
     @Transactional
     public RestaurantTable updateTableStatus(Long id, TableStatus status) {
         RestaurantTable table = getTableById(id);
         table.setStatus(status);
-        return tableRepository.save(table);
-    }
-
-    @Override
-    @Transactional
-    public RestaurantTable assignWaiter(Long tableId, Long waiterId) {
-        RestaurantTable table = getTableById(tableId);
-        User waiter = userRepository.findById(waiterId)
-            .orElseThrow(() -> new ResourceNotFoundException("Waiter", "id", waiterId));
-        
-        if (waiter.getRole() != User.UserRole.WAITER) {
-            throw new InvalidWaiterException("User with ID: " + waiterId + " is not a waiter");
-        }
-        
-        table.setAssignedWaiter(waiter);
-        return tableRepository.save(table);
-    }
-
-    @Override
-    @Transactional
-    public RestaurantTable unassignWaiter(Long tableId) {
-        RestaurantTable table = getTableById(tableId);
-        table.setAssignedWaiter(null);
         return tableRepository.save(table);
     }
 } 
