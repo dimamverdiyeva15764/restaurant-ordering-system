@@ -22,7 +22,6 @@ public class User {
     private UserRole role;
 
     private String fullName;
-    private String email;
     private boolean active = true;
 
     public enum UserRole {

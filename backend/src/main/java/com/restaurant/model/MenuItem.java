@@ -3,6 +3,7 @@ package com.restaurant.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Data
 @Entity
@@ -23,6 +24,7 @@ public class MenuItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
+    @JsonIgnoreProperties({"menuItems", "hibernateLazyInitializer"})
     private MenuCategory category;
 
     private String imageUrl;

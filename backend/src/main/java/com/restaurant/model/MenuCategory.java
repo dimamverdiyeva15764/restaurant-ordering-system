@@ -3,6 +3,7 @@ package com.restaurant.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Data
 @Entity
@@ -21,6 +22,7 @@ public class MenuCategory {
     private Integer displayOrder;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("category")
     private List<MenuItem> menuItems;
 
     private boolean active = true;
