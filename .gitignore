@@ -1,6 +1,8 @@
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
 
 node_modules/
 /frontend/node_modules/
@@ -8,8 +10,12 @@ package-lock.json
 /frontend/package-lock.json
 
 .idea/
+*.iws
 *.iml
-.vscode/
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
 
 *.class
 
@@ -20,3 +26,29 @@ package-lock.json
 
 .env
 .env.local
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Application specific ###
+application-*.properties
+!application-example.properties
