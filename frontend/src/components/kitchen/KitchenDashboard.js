@@ -14,6 +14,7 @@ import {
     Spinner,
     useToast
 } from '@chakra-ui/react';
+import LogoutButton from '../common/LogoutButton';
 
 const KitchenDashboard = () => {
     const [orders, setOrders] = useState([]);
@@ -190,7 +191,8 @@ const KitchenDashboard = () => {
     }
 
     return (
-        <Box p={6} bg="gray.50" minH="100vh">
+        <Box p={6} bg="gray.50" minH="100vh" position="relative">
+            <LogoutButton />
             <Heading mb={8} textAlign="center" color="teal.600">Kitchen Dashboard</Heading>
             {orders.length === 0 ? (
                 <Text textAlign="center" fontSize="lg">No active orders</Text>

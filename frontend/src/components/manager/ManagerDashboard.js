@@ -22,6 +22,7 @@ import {
     Spinner,
     Text
 } from '@chakra-ui/react';
+import LogoutButton from '../common/LogoutButton';
 
 const ManagerDashboard = () => {
     const [stats, setStats] = useState({
@@ -238,7 +239,8 @@ const ManagerDashboard = () => {
     }
 
     return (
-        <Box minH="100vh" bgGradient="linear(to-br, teal.50, blue.50, purple.50)" p={6}>
+        <Box p={6} bg="gray.50" minH="100vh" position="relative">
+            <LogoutButton />
             <Container maxW="container.xl">
                 <Heading mb={8} color="teal.600" fontWeight="bold" textAlign="center">
                     Manager Dashboard
