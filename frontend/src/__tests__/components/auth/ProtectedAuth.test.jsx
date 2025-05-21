@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
-// 🧪 Mock useAuth directly
 jest.mock('../../../context/AuthContext', () => ({
   useAuth: jest.fn(),
 }));

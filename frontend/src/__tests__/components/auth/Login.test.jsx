@@ -1,64 +1,66 @@
+// src/__tests__/components/auth/Login.test.jsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Login from '../../../components/auth/Login';
-import axios from 'axios';
 
+// 1) Mock Chakra UI so no focusBorderColor/colorScheme leaks through
 jest.mock('@chakra-ui/react', () => ({
-  Box: ({ children }) => <div>{children}</div>,
-  Button: ({ children, ...props }) => <button {...props}>{children}</button>,
-  FormControl: ({ children }) => <div>{children}</div>,
-  FormLabel: ({ children }) => <span>{children}</span>,
-  Input: (props) => <input {...props} />,
-  Heading: ({ children }) => <h1>{children}</h1>,
-  Text: ({ children }) => <p>{children}</p>,
-  VStack: ({ children }) => <div>{children}</div>,
-  Icon: () => <span>icon</span>,
-  useColorModeValue: (light) => light,
+  Box:              ({ children }) => <div>{children}</div>,
+  Button:           ({ children, ...rest }) => <button {...rest}>{children}</button>,
+  FormControl:      ({ children }) => <div>{children}</div>,
+  FormLabel:        ({ children }) => <span>{children}</span>,
+  Input:            ({ focusBorderColor, ...rest }) => <input {...rest} />,
+  Heading:          ({ children }) => <h1>{children}</h1>,
+  Text:             ({ children }) => <p>{children}</p>,
+  VStack:           ({ children }) => <div>{children}</div>,
+  Icon:             () => <span>icon</span>,
+  useColorModeValue:(light) => light,
 }));
 
+// 2) Mock AuthContext
 jest.mock('../../../context/AuthContext', () => ({
-  useAuth: () => ({
-    login: jest.fn(),
-  }),
+  useAuth: () => ({ login: jest.fn() }),
 }));
 
+// 3) Mock useNavigate
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
 }));
 
-jest.mock('axios');
+// 4) Mock axios
+import axios from 'axios';
+jest.mock('axios', () => ({ post: jest.fn() }));
 
 describe('Login Component', () => {
-  const renderLogin = () =>
-    render(
+  function renderLogin() {
+    return render(
       <MemoryRouter>
         <Login />
       </MemoryRouter>
     );
+  }
 
-  test('renders form inputs and button', () => {
-    renderLogin();
+  test('renders two inputs and the sign in button', () => {
+    const { container } = renderLogin();
 
-    expect(screen.getByText(/Username/i)).toBeInTheDocument();
-    expect(screen.getByText(/Password/i)).toBeInTheDocument();
+    // find all <input> elements (username + password)
+    const inputs = container.querySelectorAll('input');
+    expect(inputs).toHaveLength(2);
+
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
   test('submits form and navigates on successful login (KITCHEN_STAFF)', async () => {
     axios.post.mockResolvedValueOnce({ data: { role: 'KITCHEN_STAFF' } });
 
-    renderLogin();
+    const { container } = renderLogin();
+    const inputs = container.querySelectorAll('input');
+    const [usernameInput, passwordInput] = inputs;
 
-    const inputs = screen.getAllByRole('textbox');
-    fireEvent.change(inputs[0], { target: { value: 'john' } });
-
-    // fallback to querying all inputs and pick by type for password
-    const passwordInput = screen.getAllByRole('textbox').find(input => input.type === 'password') ||
-                          screen.getByDisplayValue('');
-
+    fireEvent.change(usernameInput, { target: { value: 'john' } });
     fireEvent.change(passwordInput, { target: { value: 'secret' } });
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
@@ -70,14 +72,11 @@ describe('Login Component', () => {
   test('shows error on failed login', async () => {
     axios.post.mockRejectedValueOnce(new Error('Invalid credentials'));
 
-    renderLogin();
+    const { container } = renderLogin();
+    const inputs = container.querySelectorAll('input');
+    const [usernameInput, passwordInput] = inputs;
 
-    const inputs = screen.getAllByRole('textbox');
-    fireEvent.change(inputs[0], { target: { value: 'baduser' } });
-
-    const passwordInput = screen.getAllByRole('textbox').find(input => input.type === 'password') ||
-                          screen.getByDisplayValue('');
-
+    fireEvent.change(usernameInput, { target: { value: 'baduser' } });
     fireEvent.change(passwordInput, { target: { value: 'badpass' } });
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 

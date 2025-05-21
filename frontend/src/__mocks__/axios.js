@@ -1,7 +1,4 @@
-const axios = {
-  post: jest.fn(),
+jest.mock('axios', () => ({
   get: jest.fn(),
-  create: () => axios,
-};
-
-export default axios;
+  put: jest.fn(),
+}));
