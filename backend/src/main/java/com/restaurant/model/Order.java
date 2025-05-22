@@ -1,24 +1,31 @@
 package com.restaurant.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.Data;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 @Entity
 @Table(name = "orders")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
+    private String orderNumber;
+
     @Column(nullable = false)
     private String tableNumber;
-
-    @Column(unique = true)
-    private String orderNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -34,13 +41,19 @@ public class Order {
     private LocalDateTime readyAt;
     private LocalDateTime deliveredAt;
 
-    @ManyToOne
-    @JoinColumn(name = "waiter_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "waiter_id", nullable = false)
+    @JsonIgnoreProperties({"password", "role"})
     private User waiter;
 
-    @JsonManagedReference
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<OrderItem> items;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<OrderItem> items = new ArrayList<>();
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal totalAmount;
+
+    @Column
+    private String notes;
 
     @PrePersist
     protected void onCreate() {
@@ -93,24 +106,8 @@ public class Order {
         return createdAt;
     }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public void setReadyAt(LocalDateTime readyAt) {
-        this.readyAt = readyAt;
-    }
-
-    public void setDeliveredAt(LocalDateTime deliveredAt) {
-        this.deliveredAt = deliveredAt;
     }
 
     public void setOrderNumber(String orderNumber) {
@@ -121,15 +118,27 @@ public class Order {
         return orderNumber;
     }
 
-    public LocalDateTime getReadyAt() {
-        return readyAt;
-    }
-
-    public LocalDateTime getDeliveredAt() {
-        return deliveredAt;
-    }
-
     public List<OrderItem> getItems() {
         return items;
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
+    }
+
+    public BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 } 

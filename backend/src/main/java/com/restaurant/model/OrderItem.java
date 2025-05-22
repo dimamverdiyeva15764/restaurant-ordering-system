@@ -3,6 +3,7 @@ package com.restaurant.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import java.math.BigDecimal;
 
 @Data
 @Entity
@@ -23,8 +24,8 @@ public class OrderItem {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(nullable = false)
-    private Double price;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
 
     private String specialInstructions;
 
@@ -34,7 +35,7 @@ public class OrderItem {
     public Integer getQuantity() {
         return quantity;
     }
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
     public String getSpecialInstructions() {

@@ -2,6 +2,7 @@ package com.restaurant.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.math.BigDecimal;
 
 public class OrderDTO {
     private Long id;
@@ -15,7 +16,7 @@ public class OrderDTO {
     private Long waiterId;
     private String waiterName;
     private List<OrderItemDTO> items;
-    private Double totalPrice;
+    private BigDecimal totalPrice;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -39,6 +40,6 @@ public class OrderDTO {
     public void setWaiterName(String waiterName) { this.waiterName = waiterName; }
     public List<OrderItemDTO> getItems() { return items; }
     public void setItems(List<OrderItemDTO> items) { this.items = items; }
-    public Double getTotalPrice() { return totalPrice; }
-    public void setTotalPrice(Double totalPrice) { this.totalPrice = totalPrice; }
+    public BigDecimal getTotalPrice() { return totalPrice; }
+    public void setTotalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; }
 } 

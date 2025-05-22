@@ -70,7 +70,9 @@ CREATE TABLE orders (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ready_at TIMESTAMP,
-    delivered_at TIMESTAMP
+    delivered_at TIMESTAMP,
+    notes TEXT,
+    total_amount DECIMAL(10,2) NOT NULL DEFAULT 0.0
 );
 
 -- Create order_items table

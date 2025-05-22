@@ -8,16 +8,18 @@ import com.restaurant.repository.UserRepository;
 import com.restaurant.model.User;
 import com.restaurant.service.OrderService;
 import com.restaurant.service.OrderNotificationService;
+import com.restaurant.service.RedisService;
+import com.restaurant.exception.InvalidWaiterException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.restaurant.exception.InvalidWaiterException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -33,6 +35,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderNotificationService notificationService;
 
+    @Autowired
+    private RedisService redisService;
+
     @Override
     @Transactional
     public Order createOrder(Order order) {
@@ -40,6 +45,9 @@ public class OrderServiceImpl implements OrderService {
         order.setCreatedAt(LocalDateTime.now());
         order.setOrderNumber("ORD-" + System.currentTimeMillis());
         Order savedOrder = orderRepository.save(order);
+        
+        // Save order session in Redis
+        redisService.saveOrderSession(savedOrder.getId().toString(), savedOrder);
         
         // Notify kitchen about new order
         notificationService.notifyNewOrder(savedOrder);
@@ -53,11 +61,29 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Optional<Order> getOrder(Long id) {
+        // First try to get from Redis
+        Object cachedOrder = redisService.getOrderSession(id.toString());
+        if (cachedOrder != null) {
+            return Optional.of((Order) cachedOrder);
+        }
+        // If not in Redis, get from database
+        Optional<Order> order = orderRepository.findById(id);
+        order.ifPresent(o -> redisService.saveOrderSession(o.getId().toString(), o));
+        return order;
+    }
+
+    @Override
+    public List<Order> getAllOrders() {
+        return orderRepository.findAllOrderByCreatedAtDesc();
+    }
+
+    @Override
     @Transactional
-    public Order updateOrderStatus(Long orderId, OrderStatus status) {
-        log.info("Updating order {} to status {}", orderId, status);
+    public Order updateOrderStatus(Long id, OrderStatus status) {
+        log.info("Updating order {} to status {}", id, status);
         
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Order not found"));
         
         log.info("Found order: ID={}, CurrentStatus={}", order.getId(), order.getStatus());
@@ -75,17 +101,8 @@ public class OrderServiceImpl implements OrderService {
         
         Order updatedOrder = orderRepository.save(order);
         
-        // Verify the update
-        Order verifiedOrder = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found after update"));
-        
-        if (verifiedOrder.getStatus() != status) {
-            log.error("Status update failed - Expected: {}, Actual: {}", status, verifiedOrder.getStatus());
-            throw new RuntimeException("Status update failed");
-        }
-        
-        // Log the status change
-        log.info("Order {} status changed from {} to {}", orderId, previousStatus, status);
+        // Update Redis cache
+        redisService.updateOrderStatus(id.toString(), status.name());
         
         // Notify all relevant parties about status change
         notificationService.broadcastKitchenUpdate(updatedOrder);
@@ -95,6 +112,14 @@ public class OrderServiceImpl implements OrderService {
         notificationService.notifyCustomer(updatedOrder.getTableNumber(), updatedOrder);
         
         return updatedOrder;
+    }
+
+    @Override
+    @Transactional
+    public void deleteOrder(Long id) {
+        orderRepository.deleteById(id);
+        // Remove from Redis cache
+        redisService.deleteOrderSession(id.toString());
     }
 
     @Override
@@ -141,6 +166,8 @@ public class OrderServiceImpl implements OrderService {
         order.setDeliveredAt(LocalDateTime.now());
         
         Order deliveredOrder = orderRepository.save(order);
+        // Update Redis cache
+        redisService.updateOrderStatus(orderId.toString(), OrderStatus.DELIVERED.name());
         notificationService.notifyCustomer(deliveredOrder.getTableNumber(), deliveredOrder);
         
         return deliveredOrder;
@@ -198,14 +225,11 @@ public class OrderServiceImpl implements OrderService {
         }
         
         Order savedOrder = orderRepository.save(order);
+        // Save order session in Redis
+        redisService.saveOrderSession(savedOrder.getId().toString(), savedOrder);
         notificationService.notifyNewOrder(savedOrder);
         
         return savedOrder;
-    }
-
-    @Override
-    public List<Order> getAllOrders() {
-        return orderRepository.findAllOrderByCreatedAtDesc();
     }
 
     @Override

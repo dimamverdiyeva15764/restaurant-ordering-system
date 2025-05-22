@@ -1,18 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
-import { AuthProvider } from './context/AuthContext';
-import { OrderProvider } from './context/OrderContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import Login from './components/auth/Login';
-import KitchenDashboard from './components/kitchen/KitchenDashboard';
-import WaiterDashboard from './components/waiter/WaiterDashboard';
-import ManagerDashboard from './components/manager/ManagerDashboard';
-import Unauthorized from './components/auth/Unauthorized';
-import MenuPage from './components/MenuPage';
-import OrderStatusPage from './components/OrderStatusPage';
-import WelcomePage from './components/WelcomePage';
-import TableSelection from './components/TableSelection';
+import { AuthProvider } from './context/AuthContext.js';
+import { OrderProvider } from './context/OrderContext.js';
+import ProtectedRoute from './components/auth/ProtectedRoute.js';
+import Login from './components/auth/Login.js';
+import KitchenDashboard from './components/kitchen/KitchenDashboard.js';
+import WaiterDashboard from './components/waiter/WaiterDashboard.js';
+import ManagerDashboard from './components/manager/ManagerDashboard.js';
+import Unauthorized from './components/auth/Unauthorized.js';
+import MenuPage from './components/MenuPage.js';
+import OrderStatusPage from './components/OrderStatusPage.js';
+import WelcomePage from './components/WelcomePage.js';
+import TableSelection from './components/TableSelection.js';
 
 function App() {
     return (

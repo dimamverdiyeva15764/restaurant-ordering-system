@@ -7,6 +7,7 @@ import com.restaurant.model.User;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 public class OrderMapper {
     public static OrderDTO toDTO(Order order) {
@@ -33,13 +34,13 @@ public class OrderMapper {
                 .collect(Collectors.toList());
             dto.setItems(itemDTOs);
             
-            // Calculate total price
-            double totalPrice = order.getItems().stream()
-                .mapToDouble(item -> item.getPrice() * item.getQuantity())
-                .sum();
+            // Calculate total price using BigDecimal
+            BigDecimal totalPrice = order.getItems().stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
             dto.setTotalPrice(totalPrice);
         } else {
-            dto.setTotalPrice(0.0);
+            dto.setTotalPrice(BigDecimal.ZERO);
         }
 
         return dto;
@@ -71,6 +72,12 @@ public class OrderMapper {
                 .map(itemDTO -> toItemEntity(itemDTO, order))
                 .collect(Collectors.toList());
             order.setItems(items);
+            
+            // Calculate and set total amount
+            BigDecimal totalAmount = dto.getItems().stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            order.setTotalAmount(totalAmount);
         }
         
         return order;

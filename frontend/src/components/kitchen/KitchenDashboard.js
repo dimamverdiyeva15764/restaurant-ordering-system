@@ -14,7 +14,7 @@ import {
     Spinner,
     useToast
 } from '@chakra-ui/react';
-import LogoutButton from '../common/LogoutButton';
+import LogoutButton from '../common/LogoutButton.js';
 
 const KitchenDashboard = () => {
     const [orders, setOrders] = useState([]);

@@ -12,7 +12,7 @@ import {
     Text,
     useToast,
 } from '@chakra-ui/react';
-import TableQRCode from './TableQRCode';
+import TableQRCode from './TableQRCode.js';
 
 const TableSelection = () => {
     const navigate = useNavigate();

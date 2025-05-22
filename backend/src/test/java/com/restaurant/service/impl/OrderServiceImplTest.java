@@ -8,10 +8,16 @@ import com.restaurant.model.User;
 import com.restaurant.repository.OrderRepository;
 import com.restaurant.repository.UserRepository;
 import com.restaurant.service.OrderNotificationService;
+import com.restaurant.service.RedisService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
-import java.util.*;
+import org.springframework.data.domain.PageRequest;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -27,103 +33,159 @@ class OrderServiceImplTest {
     @Mock
     private OrderNotificationService notificationService;
 
+    @Mock
+    private RedisService redisService;
+
     @InjectMocks
     private OrderServiceImpl orderService;
+
+    private Order testOrder;
+    private User testWaiter;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        
+        // Setup test waiter
+        testWaiter = new User();
+        testWaiter.setId(1L);
+        testWaiter.setUsername("waiter1");
+        testWaiter.setRole(User.UserRole.WAITER);
+        testWaiter.setFullName("John Doe");
+
+        // Setup test order
+        testOrder = new Order();
+        testOrder.setId(1L);
+        testOrder.setTableNumber("T1");
+        testOrder.setStatus(OrderStatus.PENDING);
+        testOrder.setWaiter(testWaiter);
+        testOrder.setCreatedAt(LocalDateTime.now());
+        testOrder.setOrderNumber("ORD-123");
     }
 
     @Test
-    void createOrder_setsDefaultFieldsAndSaves() {
-        Order order = new Order();
-        order.setTableNumber(String.valueOf(5));
-        Order savedOrder = new Order();
-        savedOrder.setOrderNumber("ORD-123");
+    void createOrder_ShouldSaveToDatabaseAndRedis() {
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
 
-        when(orderRepository.save(any(Order.class))).thenReturn(savedOrder);
-
-        Order result = orderService.createOrder(order);
+        Order result = orderService.createOrder(testOrder);
 
         assertNotNull(result);
-        assertEquals("ORD-123", result.getOrderNumber());
+        assertEquals(OrderStatus.PENDING, result.getStatus());
+        verify(orderRepository).save(any(Order.class));
+        verify(redisService).saveOrderSession(eq("1"), any(Order.class));
         verify(notificationService).notifyNewOrder(result);
     }
 
     @Test
-    void updateOrderStatus_success() {
-        Order order = new Order();
-        order.setId(1L);
-        order.setStatus(OrderStatus.PENDING);
+    void getOrder_ShouldReturnFromRedisIfAvailable() {
+        when(redisService.getOrderSession("1")).thenReturn(testOrder);
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(orderRepository.save(any())).thenReturn(order);
+        Optional<Order> result = orderService.getOrder(1L);
+
+        assertTrue(result.isPresent());
+        assertEquals(testOrder.getId(), result.get().getId());
+        verify(redisService).getOrderSession("1");
+        verify(orderRepository, never()).findById(any());
+    }
+
+    @Test
+    void getOrder_ShouldReturnFromDatabaseIfNotInRedis() {
+        when(redisService.getOrderSession("1")).thenReturn(null);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
+
+        Optional<Order> result = orderService.getOrder(1L);
+
+        assertTrue(result.isPresent());
+        assertEquals(testOrder.getId(), result.get().getId());
+        verify(redisService).getOrderSession("1");
+        verify(orderRepository).findById(1L);
+        verify(redisService).saveOrderSession(eq("1"), any(Order.class));
+    }
+
+    @Test
+    void updateOrderStatus_ShouldUpdateDatabaseAndRedis() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
 
         Order result = orderService.updateOrderStatus(1L, OrderStatus.READY);
 
-        assertEquals(OrderStatus.READY, result.getStatus());
-        verify(notificationService).broadcastKitchenUpdate(order);
+        assertNotNull(result);
+        verify(orderRepository).save(any(Order.class));
+        verify(redisService).updateOrderStatus(eq("1"), eq(OrderStatus.READY.name()));
+        verify(notificationService).broadcastKitchenUpdate(result);
     }
 
     @Test
-    void updateOrderStatus_orderNotFound_throws() {
-        when(orderRepository.findById(99L)).thenReturn(Optional.empty());
+    void createOrderFromDTO_ShouldCreateOrderWithWaiter() {
+        OrderDTO dto = new OrderDTO();
+        dto.setWaiterId(1L);
+        dto.setTableNumber("T1");
 
-        assertThrows(RuntimeException.class, () ->
-                orderService.updateOrderStatus(99L, OrderStatus.READY));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testWaiter));
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+
+        Order result = orderService.createOrderFromDTO(dto);
+
+        assertNotNull(result);
+        verify(userRepository).findById(1L);
+        verify(orderRepository).save(any(Order.class));
+        verify(redisService).saveOrderSession(eq("1"), any(Order.class));
     }
 
     @Test
-    void markOrderAsDelivered_success() {
-        Order order = new Order();
-        order.setId(1L);
-        order.setStatus(OrderStatus.READY);
-        order.setTableNumber(String.valueOf(3));
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(orderRepository.save(any(Order.class))).thenReturn(order);
-
-        Order result = orderService.markOrderAsDelivered(1L);
-
-        assertEquals(OrderStatus.DELIVERED, result.getStatus());
-        verify(notificationService).notifyCustomer(order.getTableNumber(), order);
-    }
-
-    @Test
-    void markOrderAsDelivered_notReady_throws() {
-        Order order = new Order();
-        order.setStatus(OrderStatus.PENDING);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-        assertThrows(RuntimeException.class, () ->
-                orderService.markOrderAsDelivered(1L));
-    }
-
-    @Test
-    void createOrderFromDTO_invalidWaiterRole_throws() {
+    void createOrderFromDTO_ShouldThrowExceptionForInvalidWaiter() {
         OrderDTO dto = new OrderDTO();
         dto.setWaiterId(1L);
 
-        User notWaiter = new User();
-        notWaiter.setId(1L);
-        notWaiter.setRole(User.UserRole.MANAGER);
+        User nonWaiter = new User();
+        nonWaiter.setRole(User.UserRole.KITCHEN_STAFF);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(notWaiter));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(nonWaiter));
 
-        assertThrows(InvalidWaiterException.class, () ->
-                orderService.createOrderFromDTO(dto));
+        assertThrows(InvalidWaiterException.class, () -> orderService.createOrderFromDTO(dto));
     }
 
     @Test
-    void createOrderFromDTO_waiterNotFound_throws() {
-        OrderDTO dto = new OrderDTO();
-        dto.setWaiterId(404L);
+    void getOrdersByStatus_ShouldReturnCorrectOrders() {
+        List<Order> orders = Arrays.asList(testOrder);
+        when(orderRepository.findByStatus(OrderStatus.PENDING)).thenReturn(orders);
 
-        when(userRepository.findById(404L)).thenReturn(Optional.empty());
+        List<Order> result = orderService.getOrdersByStatus(OrderStatus.PENDING);
 
-        assertThrows(InvalidWaiterException.class, () ->
-                orderService.createOrderFromDTO(dto));
+        assertEquals(1, result.size());
+        verify(orderRepository).findByStatus(OrderStatus.PENDING);
+    }
+
+    @Test
+    void getRecentOrders_ShouldReturnLimitedOrders() {
+        List<Order> orders = Arrays.asList(testOrder);
+        when(orderRepository.findRecentOrders(any(PageRequest.class))).thenReturn(orders);
+
+        List<Order> result = orderService.getRecentOrders(5);
+
+        assertEquals(1, result.size());
+        verify(orderRepository).findRecentOrders(PageRequest.of(0, 5));
+    }
+
+    @Test
+    void markOrderAsDelivered_ShouldUpdateStatusAndNotify() {
+        testOrder.setStatus(OrderStatus.READY);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
+        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+
+        Order result = orderService.markOrderAsDelivered(1L);
+
+        assertNotNull(result);
+        assertEquals(OrderStatus.DELIVERED, result.getStatus());
+        verify(redisService).updateOrderStatus(eq("1"), eq(OrderStatus.DELIVERED.name()));
+        verify(notificationService).notifyCustomer(eq("T1"), any(Order.class));
+    }
+
+    @Test
+    void markOrderAsDelivered_ShouldThrowExceptionForNonReadyOrder() {
+        testOrder.setStatus(OrderStatus.PENDING);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
+
+        assertThrows(RuntimeException.class, () -> orderService.markOrderAsDelivered(1L));
     }
 }

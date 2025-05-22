@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext.js';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
 import {
@@ -22,7 +22,7 @@ import {
     Spinner,
     Text
 } from '@chakra-ui/react';
-import LogoutButton from '../common/LogoutButton';
+import LogoutButton from '../common/LogoutButton.js';
 
 const ManagerDashboard = () => {
     const [stats, setStats] = useState({

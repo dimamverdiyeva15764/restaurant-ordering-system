@@ -1,20 +1,15 @@
--- Clear existing data first
-DELETE FROM menu_items;
-DELETE FROM menu_categories;
-
--- Reset sequences
-ALTER SEQUENCE IF EXISTS menu_categories_id_seq RESTART WITH 1;
-ALTER SEQUENCE IF EXISTS menu_items_id_seq RESTART WITH 1;
-
--- Insert menu categories
+-- Insert menu categories if they don't exist
 INSERT INTO menu_categories (name, description, display_order, active) 
-VALUES ('Main Courses', 'Our signature main dishes', 1, true);
+SELECT 'Main Courses', 'Our signature main dishes', 1, true
+WHERE NOT EXISTS (SELECT 1 FROM menu_categories WHERE name = 'Main Courses');
 
 INSERT INTO menu_categories (name, description, display_order, active) 
-VALUES ('Starters', 'Perfect beginnings to your meal', 2, true);
+SELECT 'Starters', 'Perfect beginnings to your meal', 2, true
+WHERE NOT EXISTS (SELECT 1 FROM menu_categories WHERE name = 'Starters');
 
 INSERT INTO menu_categories (name, description, display_order, active) 
-VALUES ('Desserts', 'Sweet endings to your dining experience', 3, true);
+SELECT 'Desserts', 'Sweet endings to your dining experience', 3, true
+WHERE NOT EXISTS (SELECT 1 FROM menu_categories WHERE name = 'Desserts');
 
 -- Insert menu items for Main Courses
 INSERT INTO menu_items (name, description, price, category_id, image_url, available, preparation_time, calories, ingredients, allergens, is_vegetarian, is_vegan, is_gluten_free) 
@@ -31,7 +26,8 @@ SELECT 'Classic Margherita Pizza',
        true,
        false,
        false
-FROM menu_categories WHERE name = 'Main Courses';
+FROM menu_categories WHERE name = 'Main Courses'
+AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Classic Margherita Pizza');
 
 INSERT INTO menu_items (name, description, price, category_id, image_url, available, preparation_time, calories, ingredients, allergens, is_vegetarian, is_vegan, is_gluten_free) 
 SELECT 'Spicy Thai Curry', 
@@ -47,7 +43,8 @@ SELECT 'Spicy Thai Curry',
        false,
        false,
        true
-FROM menu_categories WHERE name = 'Main Courses';
+FROM menu_categories WHERE name = 'Main Courses'
+AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Spicy Thai Curry');
 
 INSERT INTO menu_items (name, description, price, category_id, image_url, available, preparation_time, calories, ingredients, allergens, is_vegetarian, is_vegan, is_gluten_free) 
 SELECT 'Pad Thai', 
@@ -63,7 +60,8 @@ SELECT 'Pad Thai',
        false,
        false,
        true
-FROM menu_categories WHERE name = 'Main Courses';
+FROM menu_categories WHERE name = 'Main Courses'
+AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Pad Thai');
 
 -- Insert menu items for Starters
 INSERT INTO menu_items (name, description, price, category_id, image_url, available, preparation_time, calories, ingredients, allergens, is_vegetarian, is_vegan, is_gluten_free) 
@@ -80,7 +78,8 @@ SELECT 'Mediterranean Salad',
        true,
        false,
        true
-FROM menu_categories WHERE name = 'Starters';
+FROM menu_categories WHERE name = 'Starters'
+AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Mediterranean Salad');
 
 INSERT INTO menu_items (name, description, price, category_id, image_url, available, preparation_time, calories, ingredients, allergens, is_vegetarian, is_vegan, is_gluten_free) 
 SELECT 'Crispy Calamari', 
@@ -96,7 +95,8 @@ SELECT 'Crispy Calamari',
        false,
        false,
        false
-FROM menu_categories WHERE name = 'Starters';
+FROM menu_categories WHERE name = 'Starters'
+AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Crispy Calamari');
 
 INSERT INTO menu_items (name, description, price, category_id, image_url, available, preparation_time, calories, ingredients, allergens, is_vegetarian, is_vegan, is_gluten_free) 
 SELECT 'Fresh Spring Rolls', 
@@ -112,7 +112,8 @@ SELECT 'Fresh Spring Rolls',
        false,
        false,
        true
-FROM menu_categories WHERE name = 'Starters';
+FROM menu_categories WHERE name = 'Starters'
+AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Fresh Spring Rolls');
 
 -- Insert menu items for Desserts
 INSERT INTO menu_items (name, description, price, category_id, image_url, available, preparation_time, calories, ingredients, allergens, is_vegetarian, is_vegan, is_gluten_free) 
@@ -129,7 +130,8 @@ SELECT 'Chocolate Lava Cake',
        true,
        false,
        false
-FROM menu_categories WHERE name = 'Desserts';
+FROM menu_categories WHERE name = 'Desserts'
+AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Chocolate Lava Cake');
 
 INSERT INTO menu_items (name, description, price, category_id, image_url, available, preparation_time, calories, ingredients, allergens, is_vegetarian, is_vegan, is_gluten_free) 
 SELECT 'Tiramisu', 
@@ -145,4 +147,5 @@ SELECT 'Tiramisu',
        true,
        false,
        false
-FROM menu_categories WHERE name = 'Desserts'; 
+FROM menu_categories WHERE name = 'Desserts'
+AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Tiramisu'); 

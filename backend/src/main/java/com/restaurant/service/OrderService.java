@@ -2,12 +2,16 @@ package com.restaurant.service;
 
 import com.restaurant.model.Order;
 import com.restaurant.model.OrderStatus;
-import java.util.List;
 import com.restaurant.dto.OrderDTO;
+import java.util.List;
+import java.util.Optional;
 
 public interface OrderService {
     Order createOrder(Order order);
-    Order updateOrderStatus(Long orderId, OrderStatus status);
+    Optional<Order> getOrder(Long id);
+    List<Order> getAllOrders();
+    Order updateOrderStatus(Long id, OrderStatus status);
+    void deleteOrder(Long id);
     List<Order> getOrdersByStatus(OrderStatus status);
     List<Order> getOrdersByWaiter(Long waiterId);
     Order getOrderById(Long orderId);
@@ -20,6 +24,5 @@ public interface OrderService {
     List<Order> getWaiterActiveOrders(Long waiterId);
     List<Order> getWaiterCompletedOrders(Long waiterId);
     Order createOrderFromDTO(OrderDTO dto);
-    List<Order> getAllOrders();
     List<Order> getRecentOrders(int limit);
 } 

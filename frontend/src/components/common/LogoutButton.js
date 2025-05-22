@@ -2,7 +2,7 @@ import React from 'react';
 import { Button, Icon } from '@chakra-ui/react';
 import { FiLogOut } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext.js';
 
 const LogoutButton = () => {
     const navigate = useNavigate();

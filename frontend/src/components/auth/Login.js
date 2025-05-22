@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Box, Button, FormControl, FormLabel, Input, Heading, Text, VStack, useColorModeValue, Icon } from '@chakra-ui/react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext.js';
 import { FaUtensils } from 'react-icons/fa';
 
 const Login = () => {
